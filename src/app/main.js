@@ -6,6 +6,8 @@ var el = function (id) { return document.getElementById(id); };
 var parsed = null;
 var currentMonth = null;
 var currentLogs = [];
+var loadSeq = 0;
+var statusLoaded = false;
 
 function describeError(err) {
   return err && err.message ? err.message : String(err);
@@ -14,6 +16,12 @@ function describeError(err) {
 function today() {
   var now = new Date();
   return { y: now.getFullYear(), m: now.getMonth() + 1 };
+}
+
+function todayDateStr() {
+  var now = new Date();
+  var pad2 = function (v) { return v < 10 ? "0" + v : "" + v; };
+  return now.getFullYear() + "-" + pad2(now.getMonth() + 1) + "-" + pad2(now.getDate());
 }
 
 function render(state) {
@@ -36,29 +44,36 @@ function render(state) {
   if (allowed) {
     if (!currentMonth) currentMonth = today();
     showList();
-    refreshStatus();
   }
 }
 
 async function loadMonth() {
-  el("monthLabel").textContent = window.Month.label(currentMonth);
+  var seq = ++loadSeq;
+  var ym = currentMonth;
+
+  el("monthLabel").textContent = window.Month.label(ym);
   el("listView").innerHTML = '<div class="empty">読み込み中…</div>';
   el("monthNotice").innerHTML = "";
 
+  var logs;
   try {
-    currentLogs = await Storage.listLogsByMonth(currentMonth);
+    logs = await Storage.listLogsByMonth(ym);
   } catch (err) {
+    if (seq !== loadSeq) return;
     el("listView").innerHTML = '<div class="card"><span class="err">読み取りに失敗しました: ' +
       describeError(err) + "</span></div>";
     return;
   }
 
-  window.ListView.render(el("listView"), currentMonth, currentLogs, showDetail);
+  if (seq !== loadSeq) return;
+  currentLogs = logs;
+
+  window.ListView.render(el("listView"), ym, currentLogs, showDetail);
 
   var byDate = {};
   currentLogs.forEach(function (log) { byDate[log.date] = log; });
   var missing = window.Month.missingDays(
-    window.Month.daysOf(currentMonth.y, currentMonth.m), byDate);
+    window.Month.daysOf(ym.y, ym.m), byDate, todayDateStr());
 
   if (missing.length) {
     el("monthNotice").innerHTML = '<div class="notice notice-warn">記録の無い平日が' +
@@ -109,6 +124,13 @@ el("nextMonthBtn").addEventListener("click", function () {
 el("thisMonthBtn").addEventListener("click", function () {
   currentMonth = today();
   showList();
+});
+
+el("toolsDetails").addEventListener("toggle", function (event) {
+  if (event.target.open && !statusLoaded) {
+    statusLoaded = true;
+    refreshStatus();
+  }
 });
 
 el("signInBtn").addEventListener("click", function () {

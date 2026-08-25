@@ -53,8 +53,9 @@
     };
   }
 
-  function missingDays(days, logsByDate) {
+  function missingDays(days, logsByDate, until) {
     return days.filter(function (d) {
+      if (until && d.date > until) return false;
       if (d.isWeekend || d.holiday) return false;
       return !logsByDate[d.date];
     }).map(function (d) {

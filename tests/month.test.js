@@ -64,4 +64,24 @@ test("missingDays ignores weekends and holidays", function () {
   assert.ok(missing.indexOf("2026-08-07") >= 0);         // 平日
 });
 
+test("missingDays with until never reports days after the cutoff", function () {
+  var days = Month.daysOf(2026, 8);
+  // 記録が1件も無い場合でも、until より後の平日は欠損として挙げない
+  var missing = Month.missingDays(days, {}, "2026-08-10");
+  assert.strictEqual(missing.indexOf("2026-08-11"), -1); // until より後（山の日でもある）
+  assert.strictEqual(missing.indexOf("2026-08-12"), -1); // until より後の平日
+  assert.strictEqual(missing.indexOf("2026-08-31"), -1); // 月末、until より後
+  assert.ok(missing.indexOf("2026-08-10") >= 0);         // until 当日の平日は対象
+  assert.ok(missing.indexOf("2026-08-07") >= 0);         // until より前の平日も対象
+});
+
+test("missingDays without until behaves as before (backward compatible)", function () {
+  var days = Month.daysOf(2026, 8);
+  var logs = {};
+  days.forEach(function (d) {
+    if (!d.isWeekend && !d.holiday && d.date !== "2026-08-07") logs[d.date] = true;
+  });
+  assert.deepStrictEqual(Month.missingDays(days, logs), ["2026-08-07"]);
+});
+
 h.summary();

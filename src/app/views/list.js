@@ -26,14 +26,22 @@
     return "";
   }
 
-  function rowClass(day, log) {
+  function todayDateStr() {
+    var now = new Date();
+    var pad2 = function (v) { return v < 10 ? "0" + v : "" + v; };
+    return now.getFullYear() + "-" + pad2(now.getMonth() + 1) + "-" + pad2(now.getDate());
+  }
+
+  function rowClass(day, log, until) {
     if (log) return "row-link";
     if (day.isWeekend || day.holiday) return "row-off";
+    if (until && day.date > until) return "row-off";
     return "row-missing";
   }
 
   function render(container, ym, logs, onSelect) {
     var days = root.Month.daysOf(ym.y, ym.m);
+    var until = todayDateStr();
     var byDate = {};
     logs.forEach(function (log) { byDate[log.date] = log; });
 
@@ -53,7 +61,7 @@
         cells = '<td colspan="5" style="color:#92400E;font-size:12px">' + note + "</td>";
       }
 
-      return '<tr class="' + rowClass(day, log) + '" data-date="' + day.date + '">' +
+      return '<tr class="' + rowClass(day, log, until) + '" data-date="' + day.date + '">' +
         '<td class="' + dowClass(day) + '">' + day.day + "日（" + day.dowLabel + "）" +
         (day.holiday ? '<span class="holiday-name">' + esc(day.holiday) + "</span>" : "") +
         "</td>" + cells + "</tr>";

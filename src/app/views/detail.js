@@ -238,29 +238,33 @@
   }
 
   function render(container, log, onBack) {
-    var meds = root.DailyLog.wardMedsFrom(log.wardRx);
+    var normalized = root.DailyLog.normalize(log);
+    var meds = root.DailyLog.wardMedsFrom(normalized.wardRx);
+    var wardMeds = meds.filter(function (w) {
+      return WARD_NAMES_MEDS.indexOf(w.ward) !== -1;
+    });
 
     container.innerHTML =
       '<div class="detail-head">' +
       '<button class="btn" id="detailBackBtn">◀ 一覧へ戻る</button>' +
-      '<span class="detail-title">' + esc(log.date) + "</span></div>" +
-      statGrid(log, meds) +
-      rxSection(log) +
-      winjSection(log) +
-      inquiriesSection(log) +
-      doctorChangesSection(log) +
-      medsSection(meds) +
-      wardRxSection(log) +
-      premixSection(log) +
-      drugsSection(log) +
-      shortagesSection(log) +
-      packerSection(log) +
-      meetingsSection(log) +
-      mrVisitsSection(log) +
-      contactsSection(log) +
-      trainingsSection(log) +
-      notesSection(log) +
-      '<div class="author-line">記入者：' + esc(log.author) + "</div>";
+      '<span class="detail-title">' + esc(normalized.date) + "</span></div>" +
+      statGrid(normalized, wardMeds) +
+      rxSection(normalized) +
+      winjSection(normalized) +
+      inquiriesSection(normalized) +
+      doctorChangesSection(normalized) +
+      medsSection(wardMeds) +
+      wardRxSection(normalized) +
+      premixSection(normalized) +
+      drugsSection(normalized) +
+      shortagesSection(normalized) +
+      packerSection(normalized) +
+      meetingsSection(normalized) +
+      mrVisitsSection(normalized) +
+      contactsSection(normalized) +
+      trainingsSection(normalized) +
+      notesSection(normalized) +
+      '<div class="author-line">記入者：' + esc(normalized.author) + "</div>";
 
     container.querySelector("#detailBackBtn").addEventListener("click", onBack);
   }
