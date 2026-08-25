@@ -1,0 +1,20 @@
+# 業務データは絶対にリポジトリへ入れない (患者ID・薬剤情報を含むため)
+*.csv
+*.xlsx
+*.xls
+*.xlsm
+
+# テスト用のダミーデータのみ例外的に許可する
+!tests/fixtures/**/*.csv
+!tests/fixtures/**/*.xlsx
+
+# 認証情報
+*.key
+*.pem
+serviceAccount*.json
+.env
+.env.*
+
+# 依存・生成物
+node_modules/
+dist/
