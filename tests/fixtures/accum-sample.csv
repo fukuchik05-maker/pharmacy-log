@@ -1,0 +1,7 @@
+﻿"date","author","rxOpCnt","rxOpDose","rxInjCnt","rxInjDose","counsel","inquiries","doctorChanges","premixes","drugs","shortages","meetings","mrVisits","contacts","trainings","packerData","wardMeds","wardRx","winjData","notes"
+"2026-04-01","検査 太郎","1","2","3","4","5","[{""type"":""用量"",""memo"":""テスト"",""changed"":true}]","[{""doctor"":""検査 医師"",""cnt"":2}]","[]","[]","[]","[]","[]","[]","[]","{""tab"":{""分包紙"":1,""インク"":0,""清掃"":true},""san"":{""分包紙"":0,""インク"":0,""清掃"":false}}","[{""ward"":""かりゆし"",""cnt"":0,""dose"":0,""ipCnt"":0,""ipDose"":0}]","[{""name"":""かりゆし"",""teiki"":{""cnt"":1,""dose"":2},""rinji"":{""cnt"":0,""dose"":0},""taiin"":{""cnt"":0,""dose"":0},""meds"":{""cnt"":0,""dose"":0},""ippoka"":{""cnt"":0,""dose"":0},""total"":{""cnt"":1,""dose"":2}}]","[{""ward"":""かりゆし"",""cnt"":1,""dose"":1}]","備考テスト"
+"2026-04-02","検査 花子","0","0","0","0","0","[]","[]","[]","[]","[]","[]","[]","[]","[]","{}","[]","[]","[]",""
+#MEMBERS:["検査 太郎","検査 花子"]
+#CHECKLIST:{"検査 太郎":["項目A","項目B"]}
+#PREMIX_MASTER:["テスト薬A","テスト薬B"]
+#DOCTOR_MASTER:["検査 医師"]
