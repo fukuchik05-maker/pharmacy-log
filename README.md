@@ -2,6 +2,19 @@
 
 薬局業務日誌をクラウドDB (Firestore) で管理し、どの端末からでも閲覧・修正できるようにするプロジェクト。
 
+- 公開ページ: https://fukuchik05-maker.github.io/pharmacy-log/
+
+本人のGoogleアカウントでログインした場合のみデータを表示する。
+コードは公開されているが、データは Firestore のセキュリティルールで保護されている。
+
+## ローカルでの動作確認
+
+```bash
+node scripts/dev-server.js
+```
+
+http://localhost:8430 で開く。
+
 ## 設計
 
 - [設計書](docs/superpowers/specs/2026-08-25-pharmacy-log-db-migration-design.md)
