@@ -86,4 +86,16 @@ async function listLogsByMonth(ym) {
   return logs;
 }
 
-export { countLogs, saveLogs, saveMasters, getLog, listLogsByMonth };
+// Web画面からの編集を1日分だけ上書き保存する。移行(migration)と区別するため
+// _meta.source を "web" にする。
+async function saveLog(date, data) {
+  var copy = {};
+  Object.keys(data).forEach(function (key) { copy[key] = data[key]; });
+  copy._meta = {
+    source: "web",
+    webEditedAt: new Date().toISOString()
+  };
+  await setDoc(doc(db, LOGS, date), copy);
+}
+
+export { countLogs, saveLogs, saveMasters, getLog, listLogsByMonth, saveLog };
