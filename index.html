@@ -28,28 +28,48 @@
     </div>
 
     <div id="signedIn" hidden>
-      <div class="card">
-        <div class="sec-title">データの状況</div>
-        <div id="dbStatus" class="hint">確認中…</div>
+      <div class="toolbar">
+        <button id="prevMonthBtn" class="btn">◀</button>
+        <span id="monthLabel" class="month-label"></span>
+        <button id="nextMonthBtn" class="btn">▶</button>
+        <button id="thisMonthBtn" class="btn">今月</button>
       </div>
 
-      <div class="card card-amber">
-        <div class="sec-title sec-title-amber">過去データの移行</div>
-        <p class="hint">
-          蓄積CSV (<code>pharmacy_accum_*.csv</code>) を選ぶと、その中身をデータベースへ取り込みます。
-          同じ日付のデータが既にある場合は、選んだファイルの内容で置き換えます。
-        </p>
-        <input type="file" id="migrateFile" accept=".csv">
-        <div id="migratePreview" class="hint"></div>
-        <button id="migrateRunBtn" class="btn btn-success" disabled>取り込みを実行</button>
-        <div id="migrateResult" class="hint"></div>
-      </div>
+      <div id="monthNotice"></div>
+
+      <div id="listView"></div>
+
+      <div id="detailView" hidden></div>
+
+      <details class="tools">
+        <summary>データ管理</summary>
+        <div class="card">
+          <div class="sec-title">データの状況</div>
+          <div id="dbStatus" class="hint">確認中…</div>
+        </div>
+
+        <div class="card card-amber">
+          <div class="sec-title sec-title-amber">過去データの移行</div>
+          <p class="hint">
+            蓄積CSV (<code>pharmacy_accum_*.csv</code>) を選ぶと、その中身をデータベースへ取り込みます。
+            同じ日付のデータが既にある場合は、選んだファイルの内容で置き換えます。
+          </p>
+          <input type="file" id="migrateFile" accept=".csv">
+          <div id="migratePreview" class="hint"></div>
+          <button id="migrateRunBtn" class="btn btn-success" disabled>取り込みを実行</button>
+          <div id="migrateResult" class="hint"></div>
+        </div>
+      </details>
     </div>
   </main>
 
   <!-- フェーズ1のモジュール。window に公開され、src/app 側から使う -->
   <script src="src/model/daily-log.js"></script>
+  <script src="src/model/holidays.js"></script>
+  <script src="src/model/month.js"></script>
   <script src="src/parse/accum-csv.js"></script>
+  <script src="src/app/views/list.js"></script>
+  <script src="src/app/views/detail.js"></script>
   <script type="module" src="src/app/main.js"></script>
 </body>
 </html>

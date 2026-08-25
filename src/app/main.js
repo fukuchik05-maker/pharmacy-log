@@ -4,9 +4,16 @@ import * as Migrate from "./migrate.js";
 
 var el = function (id) { return document.getElementById(id); };
 var parsed = null;
+var currentMonth = null;
+var currentLogs = [];
 
 function describeError(err) {
   return err && err.message ? err.message : String(err);
+}
+
+function today() {
+  var now = new Date();
+  return { y: now.getFullYear(), m: now.getMonth() + 1 };
 }
 
 function render(state) {
@@ -27,8 +34,53 @@ function render(state) {
       state.email + " ではアクセスできません。許可されたアカウントでログインし直してください。";
   }
   if (allowed) {
+    if (!currentMonth) currentMonth = today();
+    showList();
     refreshStatus();
   }
+}
+
+async function loadMonth() {
+  el("monthLabel").textContent = window.Month.label(currentMonth);
+  el("listView").innerHTML = '<div class="empty">読み込み中…</div>';
+  el("monthNotice").innerHTML = "";
+
+  try {
+    currentLogs = await Storage.listLogsByMonth(currentMonth);
+  } catch (err) {
+    el("listView").innerHTML = '<div class="card"><span class="err">読み取りに失敗しました: ' +
+      describeError(err) + "</span></div>";
+    return;
+  }
+
+  window.ListView.render(el("listView"), currentMonth, currentLogs, showDetail);
+
+  var byDate = {};
+  currentLogs.forEach(function (log) { byDate[log.date] = log; });
+  var missing = window.Month.missingDays(
+    window.Month.daysOf(currentMonth.y, currentMonth.m), byDate);
+
+  if (missing.length) {
+    el("monthNotice").innerHTML = '<div class="notice notice-warn">記録の無い平日が' +
+      missing.length + "日あります：" + missing.join("、") + "</div>";
+  }
+}
+
+function showList() {
+  el("listView").hidden = false;
+  el("detailView").hidden = true;
+  el("monthNotice").hidden = false;
+  loadMonth();
+}
+
+function showDetail(date) {
+  var log = currentLogs.filter(function (x) { return x.date === date; })[0];
+  if (!log) return;
+  el("listView").hidden = true;
+  el("monthNotice").hidden = true;
+  el("detailView").hidden = false;
+  window.DetailView.render(el("detailView"), log, showList);
+  window.scrollTo(0, 0);
 }
 
 async function refreshStatus() {
@@ -43,6 +95,21 @@ async function refreshStatus() {
       describeError(err) + "</span>";
   }
 }
+
+el("prevMonthBtn").addEventListener("click", function () {
+  currentMonth = window.Month.shift(currentMonth, -1);
+  showList();
+});
+
+el("nextMonthBtn").addEventListener("click", function () {
+  currentMonth = window.Month.shift(currentMonth, 1);
+  showList();
+});
+
+el("thisMonthBtn").addEventListener("click", function () {
+  currentMonth = today();
+  showList();
+});
 
 el("signInBtn").addEventListener("click", function () {
   Auth.signIn().catch(function (err) {
@@ -107,6 +174,7 @@ el("migrateRunBtn").addEventListener("click", async function () {
     });
     el("migrateResult").innerHTML = '<span class="ok">' + result.logs + "件を取り込みました。</span>";
     await refreshStatus();
+    showList();
   } catch (err) {
     el("migrateResult").innerHTML = '<span class="err">取り込みに失敗しました: ' +
       describeError(err) + "</span>";
