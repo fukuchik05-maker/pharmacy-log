@@ -92,3 +92,14 @@ input[type=file]{font-size:13px;margin:.5rem 0}
 .detail-title{font-size:16px;font-weight:600}
 .author-line{font-size:12px;color:#9CA3AF;margin-top:.25rem;text-align:right}
 .empty{font-size:13px;color:#6B7280;padding:1.5rem;text-align:center}
+
+/* 編集フォーム */
+.num-input{width:70px;padding:5px 6px;border:1px solid #C8D0DC;border-radius:5px;font-size:13px;
+  font-family:inherit;text-align:right}
+.text-input{padding:5px 8px;border:1px solid #C8D0DC;border-radius:5px;font-size:13px;font-family:inherit;
+  width:100%}
+.textarea-input{resize:vertical;min-height:4.5em}
+.edit-row{display:flex;align-items:center;gap:8px;margin-top:.5rem;font-size:13px}
+.edit-row label{color:#6B7280;font-size:12px}
+.btn-row-remove{padding:3px 10px;font-size:12px;color:#991B1B;border-color:#F3D5D5}
+.notice-err{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5}

@@ -237,7 +237,7 @@
       '<div style="font-size:13px;white-space:pre-wrap;color:#4B5563">' + esc(log.notes) + "</div>");
   }
 
-  function render(container, log, onBack) {
+  function render(container, log, onBack, onEdit) {
     var normalized = root.DailyLog.normalize(log);
     var meds = root.DailyLog.wardMedsFrom(normalized.wardRx);
     var wardMeds = meds.filter(function (w) {
@@ -247,7 +247,9 @@
     container.innerHTML =
       '<div class="detail-head">' +
       '<button class="btn" id="detailBackBtn">◀ 一覧へ戻る</button>' +
-      '<span class="detail-title">' + esc(normalized.date) + "</span></div>" +
+      '<span class="detail-title">' + esc(normalized.date) + "</span>" +
+      '<button class="btn btn-primary" id="detailEditBtn" style="margin-left:auto">編集</button>' +
+      "</div>" +
       statGrid(normalized, wardMeds) +
       rxSection(normalized) +
       winjSection(normalized) +
@@ -267,6 +269,7 @@
       '<div class="author-line">記入者：' + esc(normalized.author) + "</div>";
 
     container.querySelector("#detailBackBtn").addEventListener("click", onBack);
+    container.querySelector("#detailEditBtn").addEventListener("click", onEdit);
   }
 
   root.DetailView = { render: render };

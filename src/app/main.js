@@ -9,6 +9,12 @@ var currentLogs = [];
 var loadSeq = 0;
 var statusLoaded = false;
 
+function esc(value) {
+  return String(value === undefined || value === null ? "" : value)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function describeError(err) {
   return err && err.message ? err.message : String(err);
 }
@@ -94,8 +100,53 @@ function showDetail(date) {
   el("listView").hidden = true;
   el("monthNotice").hidden = true;
   el("detailView").hidden = false;
-  window.DetailView.render(el("detailView"), log, showList);
+  window.DetailView.render(el("detailView"), log, showList, function () { showEdit(date); });
   window.scrollTo(0, 0);
+}
+
+function showEdit(date) {
+  var log = currentLogs.filter(function (x) { return x.date === date; })[0];
+  if (!log) return;
+  window.EditView.render(el("detailView"), log,
+    function (data) { saveEdit(date, data); },
+    function () { showDetail(date); });
+  window.scrollTo(0, 0);
+}
+
+async function saveEdit(date, data) {
+  var normalized = window.DailyLog.normalize(data);
+  var errors = window.DailyLog.validate(normalized);
+  var errorsEl = el("detailView").querySelector("#editErrors");
+
+  if (errors.length) {
+    errorsEl.innerHTML = '<div class="notice notice-err">入力内容にエラーがあります：<br>' +
+      errors.map(function (e) { return esc(e.field) + "：" + esc(e.message); }).join("<br>") +
+      "</div>";
+    return;
+  }
+
+  var saveBtn = el("detailView").querySelector("#editSaveBtn");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "保存中…";
+  errorsEl.innerHTML = "";
+
+  try {
+    await Storage.saveLog(date, normalized);
+  } catch (err) {
+    errorsEl.innerHTML = '<div class="notice notice-err">保存に失敗しました: ' +
+      describeError(err) + "</div>";
+    saveBtn.disabled = false;
+    saveBtn.textContent = "保存";
+    return;
+  }
+
+  var existing = currentLogs.filter(function (x) { return x.date === date; })[0];
+  if (existing) {
+    currentLogs[currentLogs.indexOf(existing)] = normalized;
+  } else {
+    currentLogs.push(normalized);
+  }
+  showDetail(date);
 }
 
 async function refreshStatus() {
