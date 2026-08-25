@@ -1,6 +1,6 @@
 import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, writeBatch,
-  query, orderBy, limit, getCountFromServer
+  query, orderBy, limit, where, getCountFromServer
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./auth.js";
 
@@ -71,4 +71,19 @@ async function getLog(date) {
   return snap.exists() ? snap.data() : null;
 }
 
-export { countLogs, saveLogs, saveMasters, getLog };
+// 月単位でまとめて取得する。ドキュメントIDと date フィールドが同じ形式のため、
+// date への範囲検索で足りる (複合インデックスは不要)。
+async function listLogsByMonth(ym) {
+  var range = window.Month.key(ym);
+  var snap = await getDocs(query(
+    collection(db, LOGS),
+    where("date", ">=", range.from),
+    where("date", "<=", range.to),
+    orderBy("date")
+  ));
+  var logs = [];
+  snap.forEach(function (d) { logs.push(d.data()); });
+  return logs;
+}
+
+export { countLogs, saveLogs, saveMasters, getLog, listLogsByMonth };
