@@ -13,7 +13,7 @@
 - **kin プロジェクトと同じ SDK 構成を用いる。** `https://www.gstatic.com/firebasejs/10.8.0/` から ES モジュールとして読み込み、設定値は `firebase-config.js` が `FIREBASE_CONFIG` としてエクスポートする
 - **Blaze プラン (従量課金) へ切り替えない。** Cloud Functions は使わない
 - **フェーズ1のモジュールは書き換えない。** `src/model/` と `src/parse/` は完成済みとして扱い、`window.DailyLog` などのグローバル経由で利用する
-- **アクセスを許可するアカウントは `fukuchik.05@gmail.com` の1つだけ**
+- **アクセスを許可するアカウントは本人の1つだけ。** 判定には Firebase の UID を用いる (メールアドレスは公開リポジトリに残さない)
 - **患者情報を含むデータをリポジトリに置かない。** 移行元CSVは利用者の手元にあるものをブラウザのファイル選択で読み込む
 - `firebase-config.js` の `apiKey` は秘密鍵ではなくプロジェクト識別子であり、公開されて問題ない。kin と同様にリポジトリへコミットする
 
@@ -76,10 +76,10 @@ export const FIREBASE_CONFIG = {
   appId: "..."
 };
 
-// アクセスを許可するアカウント。ここに無いアカウントは一切のデータを読み書きできない。
-// firestore.rules にも同じアドレスを書いており、こちらは画面表示用の判定にすぎない。
-// 実際の防御は Firestore 側のルールが担う。
-export const ALLOWED_EMAIL = "fukuchik.05@gmail.com";
+// アクセスを許可する利用者の Firebase UID。
+// メールアドレスではなく UID で判定することで、公開リポジトリに個人情報を残さない。
+// ここでの判定は画面表示の切り替えにすぎない。実際の防御は firestore.rules が担う。
+export const ALLOWED_UID = "(Firebase コンソールの Authentication > Users で確認したUID)";
 ```
 
 - [ ] **Step 3: 画面の骨格を作る**
@@ -270,7 +270,7 @@ git commit -m "feat: add the firebase connection settings and page shell"
 - Create: `src/app/main.js`
 
 **Interfaces:**
-- Consumes: `FIREBASE_CONFIG`, `ALLOWED_EMAIL` (Task 1)
+- Consumes: `FIREBASE_CONFIG`, `ALLOWED_UID` (Task 1)
 - Produces:
   - `Auth.app` — `initializeApp` の戻り値。`storage.js` が Firestore の初期化に用いる
   - `Auth.signIn(): Promise<void>`
@@ -287,7 +287,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { FIREBASE_CONFIG, ALLOWED_EMAIL } from "../../firebase-config.js";
+import { FIREBASE_CONFIG, ALLOWED_UID } from "../../firebase-config.js";
 
 var app = initializeApp(FIREBASE_CONFIG);
 var auth = getAuth(app);
@@ -311,7 +311,7 @@ function onChange(handler) {
       handler({ status: "signedOut" });
       return;
     }
-    if (user.email !== ALLOWED_EMAIL) {
+    if (user.uid !== ALLOWED_UID) {
       handler({ status: "denied", email: user.email || "(不明)" });
       return;
     }
@@ -412,8 +412,7 @@ service cloud.firestore {
     // メールアドレスが確認済みであることも条件に含める。
     function isOwner() {
       return request.auth != null
-        && request.auth.token.email == 'fukuchik.05@gmail.com'
-        && request.auth.token.email_verified == true;
+        && request.auth.uid == '(本人のUID)';
     }
 
     match /{document=**} {
@@ -438,8 +437,8 @@ Firebase コンソールの「ルール」タブにある **Rules Playground** �
 | 検証内容 | 設定 | 期待 |
 |---|---|---|
 | 未ログインは読めない | 場所 `/dailyLogs/2026-08-24`、操作 `get`、認証 **オフ** | **拒否** |
-| 別アカウントは読めない | 同上、認証オン、メール `other@example.com` | **拒否** |
-| 本人は読める | 同上、認証オン、メール `fukuchik.05@gmail.com` | **許可** |
+| 別アカウントは読めない | 同上、認証オン、UID に別の値を指定 | **拒否** |
+| 本人は読める | 同上、認証オン、UID に本人のUIDを指定 | **許可** |
 
 3つすべてが期待どおりになるまで次へ進まない。
 

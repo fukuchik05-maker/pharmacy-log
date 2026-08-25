@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { FIREBASE_CONFIG, ALLOWED_EMAIL } from "../../firebase-config.js";
+import { FIREBASE_CONFIG, ALLOWED_UID } from "../../firebase-config.js";
 
 var app = initializeApp(FIREBASE_CONFIG);
 var auth = getAuth(app);
@@ -26,7 +26,7 @@ function onChange(handler) {
       handler({ status: "signedOut" });
       return;
     }
-    if (user.email !== ALLOWED_EMAIL) {
+    if (user.uid !== ALLOWED_UID) {
       handler({ status: "denied", email: user.email || "(不明)" });
       return;
     }

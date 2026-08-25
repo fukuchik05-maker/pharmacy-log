@@ -10,6 +10,7 @@ export const FIREBASE_CONFIG = {
   appId: "1:780054306634:web:5765e4b654114f505bebb3"
 };
 
-// アクセスを許可するアカウント。
+// アクセスを許可する利用者の Firebase UID。
+// メールアドレスではなく UID で判定することで、公開リポジトリに個人情報を残さない。
 // ここでの判定は画面表示の切り替えにすぎない。実際の防御は firestore.rules が担う。
-export const ALLOWED_EMAIL = "fukuchik.05@gmail.com";
+export const ALLOWED_UID = "T0LwgXmrDTXtlI2mdSweuBp197c2";

@@ -3,12 +3,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 本人のGoogleアカウントだけを許可する。
-    // メールアドレスが確認済みであることも条件に含める。
+    // 本人のアカウントだけを許可する。
+    // メールアドレスではなく UID で判定する。
+    // このファイルは公開リポジトリに含まれるため、個人情報を残さないため。
     function isOwner() {
       return request.auth != null
-        && request.auth.token.email == 'fukuchik.05@gmail.com'
-        && request.auth.token.email_verified == true;
+        && request.auth.uid == 'T0LwgXmrDTXtlI2mdSweuBp197c2';
     }
 
     match /{document=**} {
