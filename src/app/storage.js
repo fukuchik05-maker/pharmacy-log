@@ -66,6 +66,21 @@ async function saveMasters(masters) {
   });
 }
 
+// マスタ設定画面からの読み取り専用アクセス。ドキュメントが無ければ空の初期値を返す。
+async function getMasters() {
+  var snap = await getDoc(doc(db, MASTERS, "current"));
+  if (!snap.exists()) {
+    return { members: [], checklist: {}, premixes: [], doctors: [] };
+  }
+  var data = snap.data();
+  return {
+    members: data.members || [],
+    checklist: data.checklist || {},
+    premixes: data.premixes || [],
+    doctors: data.doctors || []
+  };
+}
+
 async function getLog(date) {
   var snap = await getDoc(doc(db, LOGS, date));
   return snap.exists() ? snap.data() : null;
@@ -98,4 +113,4 @@ async function saveLog(date, data) {
   await setDoc(doc(db, LOGS, date), copy);
 }
 
-export { countLogs, saveLogs, saveMasters, getLog, listLogsByMonth, saveLog };
+export { countLogs, saveLogs, saveMasters, getMasters, getLog, listLogsByMonth, saveLog };
