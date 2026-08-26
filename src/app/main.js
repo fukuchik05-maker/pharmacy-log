@@ -186,6 +186,35 @@ async function refreshStatus() {
   }
 }
 
+async function loadMasters() {
+  el("mastersView").innerHTML = '<div class="empty">読み込み中…</div>';
+  try {
+    var masters = await Storage.getMasters();
+    window.MastersView.render(el("mastersView"), masters, handleMastersSave);
+  } catch (err) {
+    el("mastersView").innerHTML = '<div class="card"><span class="err">読み取りに失敗しました: ' +
+      describeError(err) + "</span></div>";
+  }
+}
+
+async function handleMastersSave(data) {
+  var saveBtn = el("mastersView").querySelector("#mastersSaveBtn");
+  var msgEl = el("mastersView").querySelector("#mastersMessage");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "保存中…";
+  msgEl.innerHTML = "";
+
+  try {
+    await Storage.saveMasters(data);
+    msgEl.innerHTML = '<span class="ok">保存しました。</span>';
+  } catch (err) {
+    msgEl.innerHTML = '<div class="notice notice-err">保存に失敗しました: ' +
+      describeError(err) + "</div>";
+  }
+  saveBtn.disabled = false;
+  saveBtn.textContent = "保存";
+}
+
 el("prevMonthBtn").addEventListener("click", function () {
   currentMonth = window.Month.shift(currentMonth, -1);
   showList();
@@ -213,6 +242,7 @@ el("toolsDetails").addEventListener("toggle", function (event) {
   if (event.target.open && !statusLoaded) {
     statusLoaded = true;
     refreshStatus();
+    loadMasters();
   }
 });
 
