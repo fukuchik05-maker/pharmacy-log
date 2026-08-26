@@ -119,3 +119,36 @@ input[type=file]{font-size:13px;margin:.5rem 0}
 .change-rate-fill{height:100%;background:#DC2626;border-radius:4px}
 .change-rate-lbl{font-size:12px;color:#DC2626;font-weight:500;min-width:36px}
 .no-data{text-align:center;padding:2.5rem;color:#9CA3AF;font-size:13px}
+
+/* 部門長会議報告書 */
+.report-wrap{background:#fff;border:1px solid #D4D9E2;border-radius:10px;padding:2rem;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.report-title{font-size:18px;font-weight:600;text-align:center;margin-bottom:.25rem}
+.report-subtitle{font-size:13px;color:#6B7280;text-align:center;margin-bottom:1.5rem}
+.report-meta{display:flex;justify-content:space-between;font-size:13px;margin-bottom:1.5rem;
+  padding-bottom:.75rem;border-bottom:2px solid #1F2937}
+.report-section{margin-bottom:1.5rem}
+.report-section-title{font-size:13px;font-weight:600;background:#1F2937;color:#fff;padding:4px 10px;margin-bottom:.5rem}
+.report-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.report-tbl th{background:#F4F6F9;padding:5px 8px;border:1px solid #C8D0DC;font-weight:500;
+  text-align:center;white-space:nowrap}
+.report-tbl th.left{text-align:left}
+.report-tbl td{padding:5px 8px;border:1px solid #C8D0DC;text-align:right;font-variant-numeric:tabular-nums}
+.report-tbl td.lft{text-align:left;font-weight:500}
+.report-tbl tr.grandtotal td{background:#E8EDF4;font-weight:600}
+.report-tbl .avg{color:#185FA5}
+
+/* 印刷 */
+@media print {
+  body{background:#fff!important}
+  .app-header,#mainToolbar,#monthNotice,#listView,#detailView,#reportView,
+  #deptReportToolbar,.tools{display:none!important}
+  .report-wrap{box-shadow:none;border:none;padding:0}
+  .report-tbl{font-size:7.5px!important}
+  .report-tbl th,.report-tbl td{padding:2px 3px!important}
+  .report-section-title{font-size:9px!important;padding:2px 5px!important;margin-bottom:2px!important}
+  .report-section{margin-bottom:6px!important;page-break-inside:avoid}
+  .report-title{font-size:13px!important;margin-bottom:1px!important}
+  .report-subtitle,.report-meta{font-size:9px!important;margin-bottom:4px!important}
+  .report-meta{padding-bottom:3px!important}
+  @page{margin:6mm;size:A4 portrait}
+}

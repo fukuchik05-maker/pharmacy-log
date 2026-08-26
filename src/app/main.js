@@ -9,6 +9,8 @@ var currentLogs = [];
 var loadSeq = 0;
 var statusLoaded = false;
 var currentView = "list"; // "list" | "report"
+var deptReportCache = null; // compute() の戻り値。報告者切り替え時の再描画に使う
+var deptReportInited = false;
 
 function esc(value) {
   return String(value === undefined || value === null ? "" : value)
@@ -215,6 +217,83 @@ async function handleMastersSave(data) {
   saveBtn.textContent = "保存";
 }
 
+function fiscalYearOf(dateStr) {
+  var y = Number(dateStr.split("-")[0]);
+  var m = Number(dateStr.split("-")[1]);
+  return m >= 4 ? y : y - 1;
+}
+
+function showDeptReport() {
+  el("mainToolbar").hidden = true;
+  el("monthNotice").hidden = true;
+  el("listView").hidden = true;
+  el("detailView").hidden = true;
+  el("reportView").hidden = true;
+  el("deptReportToolbar").hidden = false;
+  el("deptReportView").hidden = false;
+
+  if (!deptReportInited) {
+    deptReportInited = true;
+    initDeptReport();
+  }
+}
+
+function backFromDeptReport() {
+  el("deptReportToolbar").hidden = true;
+  el("deptReportView").hidden = true;
+  el("mainToolbar").hidden = false;
+  showList();
+}
+
+async function initDeptReport() {
+  el("deptReportView").innerHTML = '<div class="empty">読み込み中…</div>';
+  try {
+    var info = await Storage.countLogs();
+    if (info.count === 0) {
+      el("deptReportView").innerHTML = '<div class="card"><span class="err">データがありません。</span></div>';
+      return;
+    }
+
+    var masters = await Storage.getMasters();
+    var firstFY = fiscalYearOf(info.first);
+    var lastFY = fiscalYearOf(info.last);
+    var years = [];
+    for (var y = lastFY; y >= firstFY; y--) years.push(y);
+
+    el("deptReportYearSel").innerHTML = years.map(function (y) {
+      return '<option value="' + y + '">' + y + "年度</option>";
+    }).join("");
+    el("deptReportAuthorSel").innerHTML = (masters.members || []).map(function (m) {
+      return "<option>" + m + "</option>";
+    }).join("");
+
+    await loadDeptReport();
+  } catch (err) {
+    el("deptReportView").innerHTML = '<div class="card"><span class="err">読み取りに失敗しました: ' +
+      describeError(err) + "</span></div>";
+  }
+}
+
+async function loadDeptReport() {
+  var fiscalYear = Number(el("deptReportYearSel").value);
+  el("deptReportView").innerHTML = '<div class="empty">集計中…</div>';
+  try {
+    var logs = await Storage.listLogsByFiscalYear(fiscalYear);
+    deptReportCache = window.DeptReport.compute(logs, fiscalYear);
+    renderDeptReport();
+  } catch (err) {
+    el("deptReportView").innerHTML = '<div class="card"><span class="err">読み取りに失敗しました: ' +
+      describeError(err) + "</span></div>";
+  }
+}
+
+function renderDeptReport() {
+  if (!deptReportCache) return;
+  window.DeptReportView.render(el("deptReportView"), deptReportCache, {
+    author: el("deptReportAuthorSel").value
+  });
+}
+
 el("prevMonthBtn").addEventListener("click", function () {
   currentMonth = window.Month.shift(currentMonth, -1);
   showList();
@@ -236,6 +315,18 @@ el("reportToggleBtn").addEventListener("click", function () {
   } else {
     showReport();
   }
+});
+
+el("deptReportToggleBtn").addEventListener("click", showDeptReport);
+
+el("deptReportBackBtn").addEventListener("click", backFromDeptReport);
+
+el("deptReportYearSel").addEventListener("change", loadDeptReport);
+
+el("deptReportAuthorSel").addEventListener("change", renderDeptReport);
+
+el("deptReportPrintBtn").addEventListener("click", function () {
+  window.print();
 });
 
 el("toolsDetails").addEventListener("toggle", function (event) {
