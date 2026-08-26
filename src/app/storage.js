@@ -113,6 +113,29 @@ async function saveLog(date, data) {
   await setDoc(doc(db, LOGS, date), copy);
 }
 
+// 病院システムCSVの取込。該当日の wardRx だけを差し替え、他フィールドには触れない。
+// その日のドキュメントが無ければ emptyLog を土台に新規作成する (記入者などは空のまま)。
+async function saveWardRx(date, wardRx) {
+  var snap = await getDoc(doc(db, LOGS, date));
+  var copy;
+  if (snap.exists()) {
+    var data = snap.data();
+    copy = {};
+    Object.keys(data).forEach(function (key) { copy[key] = data[key]; });
+    copy.wardRx = wardRx;
+    var prevMeta = data._meta || {};
+    copy._meta = {};
+    Object.keys(prevMeta).forEach(function (key) { copy._meta[key] = prevMeta[key]; });
+    copy._meta.source = "csv";
+    copy._meta.csvIngestedAt = new Date().toISOString();
+  } else {
+    copy = window.DailyLog.emptyLog(date);
+    copy.wardRx = wardRx;
+    copy._meta = { source: "csv", csvIngestedAt: new Date().toISOString() };
+  }
+  await setDoc(doc(db, LOGS, date), copy);
+}
+
 // 年度(4月始まり)単位でまとめて取得する。listLogsByMonth と同じ単一フィールド範囲検索。
 async function listLogsByFiscalYear(fiscalYear) {
   var from = fiscalYear + "-04-01";
@@ -130,5 +153,5 @@ async function listLogsByFiscalYear(fiscalYear) {
 
 export {
   countLogs, saveLogs, saveMasters, getMasters, getLog,
-  listLogsByMonth, saveLog, listLogsByFiscalYear
+  listLogsByMonth, saveLog, saveWardRx, listLogsByFiscalYear
 };
