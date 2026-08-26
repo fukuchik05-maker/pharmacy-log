@@ -62,43 +62,46 @@ Dropbox / GitHub Actions を経由しない、ブラウザ内パース → 直�
 | 変更 | 内容 |
 |---|---|
 | `index.html` | ① `<script src="src/parse/hospital-csv.js">` と `<script src="src/parse/filename.js">` を `accum-csv.js` の隣に追加。② 「データ管理」`<details>` 内、蓄積CSV移行カードの直後に「病院システムCSVの取込」カードを新設 |
-| `src/app/hospital-import.js`(新規) | `inspect(file)` / `run(parsed, onProgress)` を公開する ES モジュール |
+| `index.html`(続き) | ③ `<script src="src/app/hospital-import-core.js">` も追加(上記2本より後) |
+| `src/app/hospital-import-core.js`(新規・UMD) | 純粋コア `buildInspection`。既存ビュー群と同じ `(function (root) { ... })` パターン。`<script>` で `window.HospitalImportCore` に公開 |
+| `src/app/hospital-import.js`(新規・ES モジュール) | `inspect(file)` / `run(parsed)` を公開。`window.HospitalImportCore` と `Storage` を使う |
 | `src/app/storage.js` | `saveWardRx(date, wardRx)` を追加し `export` に加える |
 | `src/app/main.js` | 新カードの `change` / `click` ハンドラを、既存 migrate ハンドラの直下に同じ構造で配線 |
-| `tests/hospital-import.test.js`(新規) | 純粋コア `buildInspection` の分岐を Node で検証 |
-| `tests/fixtures/` | 患者情報を含まないダミー病院CSV(5 病棟 + `■合計■` 行) |
+| `tests/hospital-import-core.test.js`(新規) | 純粋コア `buildInspection` の分岐を Node で検証 |
 
 **変更しないもの**: `src/parse/hospital-csv.js`、`src/parse/filename.js`、`src/model/daily-log.js`、
-既存のビュー群、`src/app/migrate.js`。
+既存のビュー群、`src/app/migrate.js`。**フィクスチャは既存の `tests/fixtures/hospital-sample.csv`
+(Shift-JIS・5 病棟)と `hospital-bad-number.csv` を再利用する**(新規追加しない)。
 
 ## 5. コンポーネント設計
 
-### 5.1 `src/app/hospital-import.js`
+### 5.1 モジュール分割
 
-`migrate.js` と同じく ES モジュールとし、ブラウザからは `import * as HospitalImport` で使う
-(`main.js` に配線)。Firestore に触れる非同期の薄いラッパー(`inspect` / `run`)と、
-Node で単体テストできる純粋なコア(`buildInspection`)に分ける。
+テスト可能な純粋コアと Firestore 依存のラッパーを別ファイルに分ける。ES モジュール
+(`export`)は CJS テストから `require` できないため、Node で単体テストするコアは UMD にする。
 
-#### 純粋コア(同期・依存注入なし)
+#### `src/app/hospital-import-core.js`(UMD・純粋コア・同期)
 
 ```
-buildInspection(fileName, bytes) → {
+buildInspection(fileName, bytes, today?) → {
   date:   "YYYY-MM-DD",   // Filename.parse が解決した対象日
   wardRx: [ { name, teiki, rinji, taiin, meds, ippoka, total }, ... ],  // 5 病棟
   errors: [ { field, message }, ... ]   // HospitalCsv.parse のエラー
 }
 ```
 
-1. `Filename.parse(fileName)` を呼ぶ。`null` または `kind !== "csv"` なら
+1. `Filename.parse(fileName, today)` を呼ぶ。`null` または `kind !== "csv"` なら
    `throw new Error("ファイル名から日付を判定できません。0824.csv の形式にしてください")`。
 2. `HospitalCsv.parse(bytes)` を呼び、`{ date, wardRx, errors }` を組み立てて返す。
 
-この関数は `Filename` / `HospitalCsv` を **参照するだけ**で、Firestore には触れない。
-ブラウザでは `window.Filename` / `window.HospitalCsv`(`<script>` で読込済み)を、
-Node テストでは同モジュール先頭で `require("../parse/filename.js")` 等を解決して使う
-(両モジュールは既に `module.exports` / `window.*` の両対応)。
+`Filename` / `HospitalCsv` を **参照するだけ**で、Firestore には触れない。ブラウザでは
+`root.Filename` / `root.HospitalCsv`(`<script>` で読込済み)、Node では
+`require("../parse/filename.js")` 等を使う(両モジュールとも `module.exports` / `window.*` 両対応)。
+第 3 引数 `today` はテストの時刻依存を避けるための省略可能パラメータ。本番の `inspect` は渡さない。
 
-#### 非同期ラッパー
+#### `src/app/hospital-import.js`(ES モジュール・Firestore 依存の薄いラッパー)
+
+`migrate.js` と同じ継ぎ目。`import * as Storage from "./storage.js"`、`window.HospitalImportCore` を使う。
 
 ```
 inspect(file) → Promise<{
@@ -114,7 +117,7 @@ inspect(file) → Promise<{
 4. `{ ...core, exists: existing !== null, existingWardRx: existing ? existing.wardRx : null }` を返す。
 
 ```
-run(parsed, onProgress?) → Promise<{ date }>
+run(parsed) → Promise<{ date }>
 ```
 
 1. `parsed.errors.length` があれば
@@ -122,7 +125,7 @@ run(parsed, onProgress?) → Promise<{ date }>
 2. `await Storage.saveWardRx(parsed.date, parsed.wardRx)`。
 3. `{ date: parsed.date }` を返す。
 
-`onProgress` は単日書き込みのため実質使わないが、`migrate.run` とシグネチャを揃えるため受け取る。
+単日書き込みのため `onProgress` は設けない。
 
 ### 5.2 `src/app/storage.js` に追加する `saveWardRx(date, wardRx)`
 
@@ -208,31 +211,32 @@ run(parsed, onProgress?) → Promise<{ date }>
 
 取込ロジックが誤るとデータが静かに壊れるため、パーサーとその周辺を最重要のテスト対象とする。
 
-### 8.1 新規の単体テスト `tests/hospital-import.test.js`
+### 8.1 新規の単体テスト `tests/hospital-import-core.test.js`
 
-純粋コア `buildInspection(fileName, bytes)` の分岐を Node の `assert` で検証する。
-Firestore 非依存のため素の `node tests/hospital-import.test.js` で実行できる。
+純粋コア `buildInspection(fileName, bytes, today)` の分岐を Node の `assert` で検証する。
+Firestore 非依存のため素の `node tests/hospital-import-core.test.js` で実行できる。
 
-- ファイル名不正(`sample.csv` / `0824.xlsx` など)→ `throw`
-- ダミーCSVバイト列(`tests/fixtures/` から読む)→ `date` と `wardRx`(5 病棟 × 6 区分)が
-  期待どおり組み上がる
-- 病棟の行を欠いたダミー → `errors` に該当項目が入る
-- 数値でないセルを含むダミー → `errors` に該当 `field` が入る
+- ファイル名不正(`メモ.csv` / `0824.xlsx` など)→ `throw`
+- `tests/fixtures/hospital-sample.csv` を `"0824.csv"` 名で渡す → `date` と `wardRx`
+  (5 病棟 × 6 区分)が期待どおり組み上がる
+- 病棟の行を欠いたインライン CSV(`hospital-csv.test.js` と同じ作り方)→ `errors` に該当項目
+- `tests/fixtures/hospital-bad-number.csv` → `errors` に該当 `field`
 
 `inspect` / `run`(`Storage` 依存)と `saveWardRx` は 8.3 のブラウザ合成検証でカバーする
 (`migrate.js` にも Node テストは無い。継ぎ目の precedent に合わせる)。
 
-### 8.2 ダミーフィクスチャ
+### 8.2 フィクスチャ
 
-`tests/fixtures/hospital-sample.csv`(または同等の名前)を新規追加。
-患者情報を含まない。5 病棟 + `■合計■` 行、2 行ヘッダー。Shift-JIS でなく UTF-8 でよい
-(パーサーが両対応。Shift-JIS 経路は `tests/hospital-csv.test.js` が担保済み)。
+**新規追加しない。** 既存の `tests/fixtures/hospital-sample.csv`(Shift-JIS・5 病棟・2 行ヘッダー)と
+`tests/fixtures/hospital-bad-number.csv` を再利用する。テストではファイル名を `buildInspection` の
+第 1 引数として別途与えるため、フィクスチャのファイル名が `MMDD.csv` である必要はない。
 実ファイル `C:\Users\GM\Desktop\業務日誌\0824.csv` は絶対にコミットしない。
 
 ### 8.3 ブラウザ合成検証(手動。引継ぎメモ §4 のパターン)
 
-`main.js` は検証のため `window.HospitalImport` と `window.Storage` をデバッグ用に公開する
-(ビュー群が `root.*View` で公開されているのと同じ発想。実害なし)。
+`main.js` は検証のため `window.HospitalImport` と `window.PharmacyStorage`(= `Storage`)を
+デバッグ用に公開する(ビュー群が `root.*View` で公開されているのと同じ発想。実害なし。
+`window.Storage` は Web Storage API の組み込み名のため避ける)。
 
 - dev-server 起動 → Google ログイン後、コンソールから:
   1. ダミーCSV文字列から `File`(`name: "0101.csv"`)を生成 → `window.HospitalImport.inspect(file)`
