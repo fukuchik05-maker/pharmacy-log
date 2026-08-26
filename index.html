@@ -75,6 +75,18 @@
           <div id="migrateResult" class="hint"></div>
         </div>
 
+        <div class="card card-amber">
+          <div class="sec-title sec-title-amber">病院システムCSVの取込</div>
+          <p class="hint">
+            病院システムが出力した日次CSV (<code>MMDD.csv</code>、例 <code>0824.csv</code>) を選ぶと、
+            その日の病棟別処方箋データ (wardRx) だけを更新します。他の項目には触れません。
+          </p>
+          <input type="file" id="hospCsvFile" accept=".csv">
+          <div id="hospCsvPreview" class="hint"></div>
+          <button id="hospCsvRunBtn" class="btn btn-success" disabled>取り込みを実行</button>
+          <div id="hospCsvResult" class="hint"></div>
+        </div>
+
         <div id="mastersView"></div>
 
         <div id="changelogView"></div>
@@ -89,6 +101,9 @@
   <script src="src/model/monthly-report.js"></script>
   <script src="src/model/dept-report.js"></script>
   <script src="src/parse/accum-csv.js"></script>
+  <script src="src/parse/hospital-csv.js"></script>
+  <script src="src/parse/filename.js"></script>
+  <script src="src/app/hospital-import-core.js"></script>
   <script src="src/app/views/list.js"></script>
   <script src="src/app/views/detail.js"></script>
   <script src="src/app/views/edit.js"></script>
