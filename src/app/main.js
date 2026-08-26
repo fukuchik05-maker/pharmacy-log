@@ -334,6 +334,7 @@ el("toolsDetails").addEventListener("toggle", function (event) {
     statusLoaded = true;
     refreshStatus();
     loadMasters();
+    window.ChangelogView.render(el("changelogView"));
   }
 });
 
