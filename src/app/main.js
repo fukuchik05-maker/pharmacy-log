@@ -8,6 +8,7 @@ var currentMonth = null;
 var currentLogs = [];
 var loadSeq = 0;
 var statusLoaded = false;
+var currentView = "list"; // "list" | "report"
 
 function esc(value) {
   return String(value === undefined || value === null ? "" : value)
@@ -74,7 +75,7 @@ async function loadMonth() {
   if (seq !== loadSeq) return;
   currentLogs = logs;
 
-  window.ListView.render(el("listView"), ym, currentLogs, showDetail);
+  renderCurrentView(ym);
 
   var byDate = {};
   currentLogs.forEach(function (log) { byDate[log.date] = log; });
@@ -87,9 +88,32 @@ async function loadMonth() {
   }
 }
 
+function renderCurrentView(ym) {
+  if (currentView === "report") {
+    el("reportView").innerHTML = '<div class="empty">集計中…</div>';
+    var report = window.MonthlyReport.compute(currentLogs, ym);
+    window.ReportView.render(el("reportView"), report);
+  } else {
+    window.ListView.render(el("listView"), ym, currentLogs, showDetail);
+  }
+}
+
 function showList() {
+  currentView = "list";
+  el("reportToggleBtn").textContent = "月報";
   el("listView").hidden = false;
   el("detailView").hidden = true;
+  el("reportView").hidden = true;
+  el("monthNotice").hidden = false;
+  loadMonth();
+}
+
+function showReport() {
+  currentView = "report";
+  el("reportToggleBtn").textContent = "一覧";
+  el("listView").hidden = true;
+  el("detailView").hidden = true;
+  el("reportView").hidden = false;
   el("monthNotice").hidden = false;
   loadMonth();
 }
@@ -175,6 +199,14 @@ el("nextMonthBtn").addEventListener("click", function () {
 el("thisMonthBtn").addEventListener("click", function () {
   currentMonth = today();
   showList();
+});
+
+el("reportToggleBtn").addEventListener("click", function () {
+  if (currentView === "report") {
+    showList();
+  } else {
+    showReport();
+  }
 });
 
 el("toolsDetails").addEventListener("toggle", function (event) {

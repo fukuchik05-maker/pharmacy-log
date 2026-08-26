@@ -33,6 +33,7 @@
         <span id="monthLabel" class="month-label"></span>
         <button id="nextMonthBtn" class="btn">▶</button>
         <button id="thisMonthBtn" class="btn">今月</button>
+        <button id="reportToggleBtn" class="btn" style="margin-left:auto">月報</button>
       </div>
 
       <div id="monthNotice"></div>
@@ -40,6 +41,8 @@
       <div id="listView"></div>
 
       <div id="detailView" hidden></div>
+
+      <div id="reportView" hidden></div>
 
       <details class="tools" id="toolsDetails">
         <summary>データ管理</summary>
@@ -67,10 +70,12 @@
   <script src="src/model/daily-log.js"></script>
   <script src="src/model/holidays.js"></script>
   <script src="src/model/month.js"></script>
+  <script src="src/model/monthly-report.js"></script>
   <script src="src/parse/accum-csv.js"></script>
   <script src="src/app/views/list.js"></script>
   <script src="src/app/views/detail.js"></script>
   <script src="src/app/views/edit.js"></script>
+  <script src="src/app/views/report.js"></script>
   <script type="module" src="src/app/main.js"></script>
 </body>
 </html>
