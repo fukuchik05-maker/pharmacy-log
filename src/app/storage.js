@@ -113,4 +113,22 @@ async function saveLog(date, data) {
   await setDoc(doc(db, LOGS, date), copy);
 }
 
-export { countLogs, saveLogs, saveMasters, getMasters, getLog, listLogsByMonth, saveLog };
+// 年度(4月始まり)単位でまとめて取得する。listLogsByMonth と同じ単一フィールド範囲検索。
+async function listLogsByFiscalYear(fiscalYear) {
+  var from = fiscalYear + "-04-01";
+  var to = (fiscalYear + 1) + "-03-31";
+  var snap = await getDocs(query(
+    collection(db, LOGS),
+    where("date", ">=", from),
+    where("date", "<=", to),
+    orderBy("date")
+  ));
+  var logs = [];
+  snap.forEach(function (d) { logs.push(d.data()); });
+  return logs;
+}
+
+export {
+  countLogs, saveLogs, saveMasters, getMasters, getLog,
+  listLogsByMonth, saveLog, listLogsByFiscalYear
+};
