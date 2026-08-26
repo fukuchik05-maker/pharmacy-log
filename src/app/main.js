@@ -1,6 +1,7 @@
 import * as Auth from "./auth.js";
 import * as Storage from "./storage.js";
 import * as Migrate from "./migrate.js";
+import * as HospitalImport from "./hospital-import.js";
 
 var el = function (id) { return document.getElementById(id); };
 var parsed = null;
@@ -11,6 +12,13 @@ var statusLoaded = false;
 var currentView = "list"; // "list" | "report"
 var deptReportCache = null; // compute() の戻り値。報告者切り替え時の再描画に使う
 var deptReportInited = false;
+
+// 合成検証用。ブラウザのコンソールから取込ロジックを直接叩けるようにする
+// (ビュー群が root.*View で公開されているのと同じ発想。実害なし)。
+window.HospitalImport = HospitalImport;
+window.PharmacyStorage = Storage;
+
+var hospParsed = null;
 
 function esc(value) {
   return String(value === undefined || value === null ? "" : value)
@@ -406,6 +414,109 @@ el("migrateRunBtn").addEventListener("click", async function () {
     el("migrateResult").innerHTML = '<span class="err">取り込みに失敗しました: ' +
       describeError(err) + "</span>";
     el("migrateRunBtn").disabled = false;
+  }
+});
+
+var HOSP_KIND_LABELS = {
+  teiki: "定期", rinji: "臨時", taiin: "退院", meds: "持参薬", ippoka: "1包化", total: "合計"
+};
+
+function hospPairText(pair) {
+  return ((pair && pair.cnt) || 0) + "/" + ((pair && pair.dose) || 0);
+}
+
+// wardRx を「病棟 × 6区分」の表にする。existingWardRx があれば
+// 値が変わるセルだけ「既存 → 新」を太字で併記する。
+function hospPreviewTable(wardRx, existingWardRx) {
+  var kinds = window.DailyLog.RX_KINDS;
+  var head = "<tr><th>病棟</th>" + kinds.map(function (k) {
+    return '<th class="num">' + HOSP_KIND_LABELS[k] + "</th>";
+  }).join("") + "</tr>";
+  var prevByName = {};
+  (existingWardRx || []).forEach(function (r) { prevByName[r.name] = r; });
+  var body = wardRx.map(function (row) {
+    var cells = kinds.map(function (k) {
+      var next = hospPairText(row[k]);
+      var prevRow = prevByName[row.name];
+      if (!prevRow) return '<td class="num">' + esc(next) + "</td>";
+      var prev = hospPairText(prevRow[k]);
+      if (prev === next) return '<td class="num">' + esc(next) + "</td>";
+      return '<td class="num"><strong>' + esc(prev) + " → " + esc(next) + "</strong></td>";
+    }).join("");
+    return "<tr><td>" + esc(row.name) + "</td>" + cells + "</tr>";
+  }).join("");
+  return '<div class="tbl-wrap"><table class="tbl"><thead>' + head +
+    "</thead><tbody>" + body + "</tbody></table></div>";
+}
+
+// 取込成功後、その日の詳細画面へ移動する。showDetail は currentLogs
+// (現在ロード中の月) から日を引くため、先に対象月をロードする。
+async function hospGotoImportedDay(date) {
+  currentMonth = { y: +date.slice(0, 4), m: +date.slice(5, 7) };
+  currentView = "list";
+  el("reportToggleBtn").textContent = "月報";
+  el("listView").hidden = false;
+  el("detailView").hidden = true;
+  el("reportView").hidden = true;
+  el("monthNotice").hidden = false;
+  await loadMonth();
+  showDetail(date);
+}
+
+el("hospCsvFile").addEventListener("change", async function (event) {
+  var file = event.target.files[0];
+  hospParsed = null;
+  el("hospCsvRunBtn").disabled = true;
+  el("hospCsvResult").textContent = "";
+
+  if (!file) {
+    el("hospCsvPreview").textContent = "";
+    return;
+  }
+
+  el("hospCsvPreview").textContent = "読み込み中…";
+  try {
+    var result = await HospitalImport.inspect(file);
+
+    if (result.errors.length) {
+      el("hospCsvPreview").innerHTML = '<span class="err">' +
+        result.errors.length + "件の問題があります。取り込みを中止しました。\n" +
+        result.errors.slice(0, 5).map(function (e) {
+          return e.field + " — " + e.message;
+        }).join("\n") + "</span>";
+      return;
+    }
+
+    hospParsed = result;
+    var lead = result.exists
+      ? esc(result.date) + " — この日の wardRx を上書きします"
+      : esc(result.date) + " — 新規作成します（記入者は空。あとで編集画面で補完してください）";
+    el("hospCsvPreview").innerHTML = '<span class="ok">' + lead + "</span>" +
+      hospPreviewTable(result.wardRx, result.existingWardRx);
+    el("hospCsvRunBtn").disabled = false;
+  } catch (err) {
+    el("hospCsvPreview").innerHTML = '<span class="err">読み込みに失敗しました: ' +
+      esc(describeError(err)) + "</span>";
+  }
+});
+
+el("hospCsvRunBtn").addEventListener("click", async function () {
+  if (!hospParsed) return;
+  el("hospCsvRunBtn").disabled = true;
+  el("hospCsvResult").innerHTML = '<span class="progress">取り込み中…</span>';
+
+  try {
+    var result = await HospitalImport.run(hospParsed);
+    el("hospCsvResult").innerHTML = '<span class="ok">' + esc(result.date) + " を取り込みました。</span>";
+    hospParsed = null;
+    el("hospCsvFile").value = "";
+    el("hospCsvPreview").textContent = "";
+    await refreshStatus();
+    await hospGotoImportedDay(result.date);
+  } catch (err) {
+    el("hospCsvResult").innerHTML = '<span class="err">取り込みに失敗しました: ' +
+      esc(describeError(err)) + "</span>";
+    el("hospCsvRunBtn").disabled = false;
   }
 });
 

@@ -6,6 +6,13 @@ var Core = window.HospitalImportCore;
 async function inspect(file) {
   var bytes = new Uint8Array(await file.arrayBuffer());
   var core = Core.buildInspection(file.name, bytes);
+  // パースエラーがあれば取込は中止になる。既存確認のための読み取りは省く。
+  if (core.errors.length) {
+    return {
+      date: core.date, wardRx: core.wardRx, errors: core.errors,
+      exists: false, existingWardRx: null
+    };
+  }
   var existing = await Storage.getLog(core.date);
   return {
     date: core.date,
