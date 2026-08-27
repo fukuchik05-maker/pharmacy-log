@@ -8,11 +8,7 @@
   var DRUG_LABELS = {
     adopt: "採用", remove: "削除", expire: "期限切れ", "return": "返品", maintenance: "メンテナンス"
   };
-  var WARDRX_KINDS = [
-    { key: "teiki", label: "定期" }, { key: "rinji", label: "臨時" },
-    { key: "taiin", label: "退院" }, { key: "meds", label: "持参薬" },
-    { key: "ippoka", label: "1包化" }
-  ];
+  var WARDRX_KINDS = DL.WARDRX_INPUT_KINDS;
   var PACKER_UNITS = [
     { key: "tab", label: "錠剤分包機" }, { key: "san", label: "散剤分包機" }
   ];
@@ -81,19 +77,33 @@
     }).join("");
     return table('<th>病棟</th><th class="num">枚数</th><th class="num">件数</th>', rows);
   }
-  function wardRxBody() {
-    var head = "<th>病棟</th>" + WARDRX_KINDS.map(function (k) {
-      return '<th class="num">' + k.label + "</th>";
-    }).join("") + '<th class="num">合計</th>';
+  function wardRxKindBlock(kind) {
     var rows = WARDS.map(function (ward) {
-      var cells = WARDRX_KINDS.map(function (kind) {
-        return "<td>" +
-          '<input type="number" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
-          '" data-wardrx-kind="' + kind.key + '" value="0"></td>';
-      }).join("");
-      return "<tr><td>" + esc(ward) + "</td>" + cells + '<td class="num" data-wardrx-total="' + esc(ward) + '">0</td></tr>';
+      return "<tr><td>" + esc(ward) + "</td><td>" +
+        '<input type="number" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
+        '" data-wardrx-kind="' + kind.key + '" data-wardrx-metric="cnt" value="0"></td><td>' +
+        '<input type="number" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
+        '" data-wardrx-kind="' + kind.key + '" data-wardrx-metric="dose" value="0"></td></tr>';
     }).join("");
-    return table(head, rows) + '<div class="hint">合計は自動計算です。</div>';
+    return '<div style="margin-bottom:.75rem">' +
+      '<div style="font-size:12px;font-weight:600;margin-bottom:4px">' + esc(kind.label) + "</div>" +
+      table('<th>病棟</th><th class="num">枚数</th><th class="num">件数</th>', rows) + "</div>";
+  }
+
+  function wardRxTotalBlock() {
+    var rows = WARDS.map(function (ward) {
+      return "<tr><td>" + esc(ward) + '</td><td class="num">' +
+        '<span data-wardrx-total-cnt="' + esc(ward) + '">0</span> / ' +
+        '<span data-wardrx-total-dose="' + esc(ward) + '">0</span></td></tr>';
+    }).join("");
+    return '<div style="margin-bottom:.25rem">' +
+      '<div style="font-size:12px;font-weight:600;margin-bottom:4px">合計（枚 / 件）</div>' +
+      table('<th>病棟</th><th class="num">合計</th>', rows) + "</div>";
+  }
+
+  function wardRxBody() {
+    return WARDRX_KINDS.map(wardRxKindBlock).join("") + wardRxTotalBlock() +
+      '<div class="hint">合計は自動計算です。</div>';
   }
   function doctorChangesBody(masters) {
     var list = masters.doctors || [];
@@ -228,16 +238,17 @@
       body.innerHTML = checklistBody(masters, e.target.value);
     });
 
-    // wardRx 合計の自動計算
+    // wardRx 合計(枚・件)の自動計算
     container.addEventListener("input", function (e) {
       if (!e.target.closest("[data-wardrx-ward]")) return;
       var ward = e.target.getAttribute("data-wardrx-ward");
-      var sum = 0;
+      var cnt = 0, dose = 0;
       WARDRX_KINDS.forEach(function (kind) {
-        var inp = container.querySelector('[data-wardrx-ward="' + ward + '"][data-wardrx-kind="' + kind.key + '"]');
-        sum += num(inp.value);
+        cnt += num(container.querySelector('[data-wardrx-ward="' + ward + '"][data-wardrx-kind="' + kind.key + '"][data-wardrx-metric="cnt"]').value);
+        dose += num(container.querySelector('[data-wardrx-ward="' + ward + '"][data-wardrx-kind="' + kind.key + '"][data-wardrx-metric="dose"]').value);
       });
-      container.querySelector('[data-wardrx-total="' + ward + '"]').textContent = sum;
+      container.querySelector('[data-wardrx-total-cnt="' + ward + '"]').textContent = cnt;
+      container.querySelector('[data-wardrx-total-dose="' + ward + '"]').textContent = dose;
     });
 
     // 明細の行追加・削除
@@ -285,8 +296,10 @@
     var wardRxRows = WARDS.map(function (ward) {
       var row = { name: ward };
       WARDRX_KINDS.forEach(function (kind) {
-        var inp = q('[data-wardrx-ward="' + ward + '"][data-wardrx-kind="' + kind.key + '"]');
-        row[kind.key] = { cnt: num(inp.value), dose: 0 };
+        row[kind.key] = {
+          cnt: num(q('[data-wardrx-ward="' + ward + '"][data-wardrx-kind="' + kind.key + '"][data-wardrx-metric="cnt"]').value),
+          dose: num(q('[data-wardrx-ward="' + ward + '"][data-wardrx-kind="' + kind.key + '"][data-wardrx-metric="dose"]').value)
+        };
       });
       return row;
     });
