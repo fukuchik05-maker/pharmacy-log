@@ -78,4 +78,14 @@ test("wardMedsFrom derives carried-in drug figures from wardRx", function () {
   assert.deepStrictEqual(meds[0], { ward: "かりゆし", cnt: 0, dose: 0, ipCnt: 0, ipDose: 0 });
 });
 
+test("WARDRX_INPUT_KINDS lists the five editable ward-rx kinds in order", function () {
+  assert.deepStrictEqual(
+    DailyLog.WARDRX_INPUT_KINDS.map(function (k) { return k.key; }),
+    ["teiki", "rinji", "taiin", "meds", "ippoka"]
+  );
+  DailyLog.WARDRX_INPUT_KINDS.forEach(function (k) {
+    assert.ok(typeof k.key === "string" && k.label.length > 0);
+  });
+});
+
 h.summary();

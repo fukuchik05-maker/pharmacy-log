@@ -3,6 +3,13 @@
 
   var WARDS = ["かりゆし", "ゆいゆい", "うりずん北", "うりずん南", "はいさい"];
   var RX_KINDS = ["teiki", "rinji", "taiin", "meds", "ippoka", "total"];
+  var WARDRX_INPUT_KINDS = [
+    { key: "teiki", label: "定期" },
+    { key: "rinji", label: "臨時" },
+    { key: "taiin", label: "退院" },
+    { key: "meds", label: "持参薬" },
+    { key: "ippoka", label: "1包化" }
+  ];
   var INQ_TYPES = ["用法", "用量", "日数", "相互作用", "重複", "禁忌", "漏れ", "その他"];
   var DRUG_TYPES = ["adopt", "remove", "expire", "return", "maintenance"];
   var MEETING_TYPES = ["電子カルテ", "感染", "部門長", "倫理", "医薬品", "褥瘡", "医療安全"];
@@ -234,6 +241,7 @@
   var api = {
     WARDS: WARDS,
     RX_KINDS: RX_KINDS,
+    WARDRX_INPUT_KINDS: WARDRX_INPUT_KINDS,
     INQ_TYPES: INQ_TYPES,
     DRUG_TYPES: DRUG_TYPES,
     MEETING_TYPES: MEETING_TYPES,
