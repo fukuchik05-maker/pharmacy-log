@@ -1,5 +1,5 @@
 import {
-  getFirestore, collection, doc, getDoc, getDocs, setDoc, writeBatch,
+  getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch,
   query, orderBy, limit, where, getCountFromServer
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./auth.js";
@@ -136,6 +136,39 @@ async function saveWardRx(date, wardRx) {
   await setDoc(doc(db, LOGS, date), copy);
 }
 
+var DRAFTS = "draftEntries";
+
+// モバイル入力ページが作った下書きを createdAt 昇順で全件取得する。
+async function listDrafts() {
+  var snap = await getDocs(query(collection(db, DRAFTS), orderBy("createdAt")));
+  var out = [];
+  snap.forEach(function (d) {
+    var data = d.data();
+    out.push({
+      id: d.id, uid: data.uid, date: data.date, author: data.author,
+      createdAt: data.createdAt, payload: data.payload || {}
+    });
+  });
+  return out;
+}
+
+async function deleteDraft(id) {
+  await deleteDoc(doc(db, DRAFTS, id));
+}
+
+// 下書きの承認。fields = Object.assign({author}, payload)。
+// 既存ログを読み、payload にあるキーだけ上書きして保存する(partial merge)。
+async function saveDailyEntry(date, fields) {
+  var snap = await getDoc(doc(db, LOGS, date));
+  var existing = snap.exists() ? snap.data() : null;
+  var payload = {};
+  Object.keys(fields).forEach(function (k) { if (k !== "author") payload[k] = fields[k]; });
+  var merged = window.DraftMerge.mergeDraftIntoLog(existing, {
+    date: date, author: fields.author || "", payload: payload
+  });
+  await setDoc(doc(db, LOGS, date), merged);
+}
+
 // 年度(4月始まり)単位でまとめて取得する。listLogsByMonth と同じ単一フィールド範囲検索。
 async function listLogsByFiscalYear(fiscalYear) {
   var from = fiscalYear + "-04-01";
@@ -153,5 +186,6 @@ async function listLogsByFiscalYear(fiscalYear) {
 
 export {
   countLogs, saveLogs, saveMasters, getMasters, getLog,
-  listLogsByMonth, saveLog, saveWardRx, listLogsByFiscalYear
+  listLogsByMonth, saveLog, saveWardRx, listLogsByFiscalYear,
+  listDrafts, deleteDraft, saveDailyEntry
 };
