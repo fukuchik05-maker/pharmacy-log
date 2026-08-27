@@ -51,9 +51,9 @@
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
   function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
-  function numInput(field, value) {
-    return '<input type="number" min="0" step="1" class="num-input" data-field="' +
-      field + '" value="' + num(value) + '">';
+  function numInput(field) {
+    return '<input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-field="' +
+      field + '" placeholder="0">';
   }
   function table(head, rows) {
     return '<div class="tbl-wrap"><table class="tbl"><thead><tr>' + head +
@@ -63,27 +63,27 @@
   // --- 固定構造セクションの body ---
   function gairaiBody() {
     return table('<th>区分</th><th class="num">枚数</th><th class="num">件数</th>',
-      "<tr><td>外来処方箋</td><td>" + numInput("rxOpCnt", 0) + "</td><td>" + numInput("rxOpDose", 0) + "</td></tr>" +
-      "<tr><td>外来注射箋</td><td>" + numInput("rxInjCnt", 0) + "</td><td>" + numInput("rxInjDose", 0) + "</td></tr>"
-    ) + '<div class="edit-row"><label>薬剤管理指導（件）</label>' + numInput("counsel", 0) + "</div>";
+      "<tr><td>外来処方箋</td><td>" + numInput("rxOpCnt") + "</td><td>" + numInput("rxOpDose") + "</td></tr>" +
+      "<tr><td>外来注射箋</td><td>" + numInput("rxInjCnt") + "</td><td>" + numInput("rxInjDose") + "</td></tr>"
+    ) + '<div class="edit-row"><label>薬剤管理指導（件）</label>' + numInput("counsel") + "</div>";
   }
   function winjBody() {
     var rows = WARDS.map(function (ward) {
       return "<tr><td>" + esc(ward) + "</td><td>" +
-        '<input type="number" min="0" step="1" class="num-input" data-winj-ward="' + esc(ward) +
-        '" data-winj-kind="cnt" value="0"></td><td>' +
-        '<input type="number" min="0" step="1" class="num-input" data-winj-ward="' + esc(ward) +
-        '" data-winj-kind="dose" value="0"></td></tr>';
+        '<input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-winj-ward="' + esc(ward) +
+        '" data-winj-kind="cnt" placeholder="0"></td><td>' +
+        '<input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-winj-ward="' + esc(ward) +
+        '" data-winj-kind="dose" placeholder="0"></td></tr>';
     }).join("");
     return table('<th>病棟</th><th class="num">枚数</th><th class="num">件数</th>', rows);
   }
   function wardRxKindBlock(kind) {
     var rows = WARDS.map(function (ward) {
       return "<tr><td>" + esc(ward) + "</td><td>" +
-        '<input type="number" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
-        '" data-wardrx-kind="' + kind.key + '" data-wardrx-metric="cnt" value="0"></td><td>' +
-        '<input type="number" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
-        '" data-wardrx-kind="' + kind.key + '" data-wardrx-metric="dose" value="0"></td></tr>';
+        '<input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
+        '" data-wardrx-kind="' + kind.key + '" data-wardrx-metric="cnt" placeholder="0"></td><td>' +
+        '<input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
+        '" data-wardrx-kind="' + kind.key + '" data-wardrx-metric="dose" placeholder="0"></td></tr>';
     }).join("");
     return '<div style="margin-bottom:.75rem">' +
       '<div style="font-size:12px;font-weight:600;margin-bottom:4px">' + esc(kind.label) + "</div>" +
@@ -110,8 +110,8 @@
     if (!list.length) return '<div class="hint">医師マスタが空です。</div>';
     var rows = list.map(function (doctor, i) {
       return "<tr><td>" + esc(doctor) + "</td><td>" +
-        '<input type="number" min="0" step="1" class="num-input" data-doctor="' + esc(doctor) +
-        '" data-doctor-index="' + i + '" value="0"></td></tr>';
+        '<input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-doctor="' + esc(doctor) +
+        '" data-doctor-index="' + i + '" placeholder="0"></td></tr>';
     }).join("");
     return table('<th>医師</th><th class="num">処方変更件数</th>', rows);
   }
@@ -120,18 +120,18 @@
     if (!list.length) return '<div class="hint">予製マスタが空です。</div>';
     var rows = list.map(function (drug, i) {
       return "<tr><td>" + esc(drug) + "</td><td>" +
-        '<input type="number" min="0" step="1" class="num-input" data-premix="' + esc(drug) +
-        '" data-premix-index="' + i + '" value="0"></td></tr>';
+        '<input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-premix="' + esc(drug) +
+        '" data-premix-index="' + i + '" placeholder="0"></td></tr>';
     }).join("");
     return table('<th>薬剤</th><th class="num">個数</th>', rows);
   }
   function packerBody() {
     var blocks = PACKER_UNITS.map(function (unit) {
       return '<div><div style="font-size:12px;font-weight:600;margin-bottom:4px">' + unit.label + "</div>" +
-        '<div class="edit-row"><label>分包紙</label><input type="number" min="0" step="1" class="num-input" data-packer-unit="' +
-        unit.key + '" data-packer-item="分包紙" value="0"></div>' +
-        '<div class="edit-row"><label>インク</label><input type="number" min="0" step="1" class="num-input" data-packer-unit="' +
-        unit.key + '" data-packer-item="インク" value="0"></div>' +
+        '<div class="edit-row"><label>分包紙</label><input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-packer-unit="' +
+        unit.key + '" data-packer-item="分包紙" placeholder="0"></div>' +
+        '<div class="edit-row"><label>インク</label><input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-packer-unit="' +
+        unit.key + '" data-packer-item="インク" placeholder="0"></div>' +
         '<div class="edit-row"><label><input type="checkbox" data-packer-unit="' + unit.key +
         '" data-packer-item="清掃"> 清掃</label></div></div>';
     }).join("");
@@ -163,7 +163,7 @@
       return '<input type="checkbox" data-field="' + spec.field + '"' + (value ? " checked" : "") + ">";
     }
     if (spec.type === "number") {
-      return '<input type="number" min="0" step="1" class="num-input" data-field="' + spec.field + '" value="' + num(value) + '">';
+      return '<input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-field="' + spec.field + '" placeholder="0">';
     }
     return '<input type="text" class="text-input" data-field="' + spec.field + '" value="' + esc(value) + '">';
   }
