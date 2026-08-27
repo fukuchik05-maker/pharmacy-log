@@ -11,6 +11,37 @@ service cloud.firestore {
         && request.auth.uid == 'T0LwgXmrDTXtlI2mdSweuBp197c2';
     }
 
+    // 確定日誌。従来どおり本人のみ。
+    match /dailyLogs/{doc} {
+      allow read, write: if isOwner();
+    }
+
+    // マスタ。本人は読み書き、匿名(モバイル入力ページ)は読み取りのみ。
+    match /masters/{doc} {
+      allow read: if isOwner() || request.auth != null;
+      allow write: if isOwner();
+    }
+
+    // モバイル入力ページの下書き。
+    // 匿名は「自分の uid を付けた作成」と「自分の uid の下書きの読み取り」だけ。
+    // 承認・却下(update / delete)は本人のみ。
+    match /draftEntries/{doc} {
+      allow update, delete: if isOwner();
+      allow read: if isOwner()
+        || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(
+             ['schemaVersion', 'uid', 'date', 'author', 'createdAt', 'status', 'payload'])
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && request.resource.data.author is string
+        && request.resource.data.author.size() <= 40
+        && request.resource.data.payload is map;
+    }
+
+    // その他(ingestRuns 等)は従来どおり本人のみ。
     match /{document=**} {
       allow read, write: if isOwner();
     }
