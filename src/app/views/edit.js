@@ -11,13 +11,7 @@
     adopt: "採用", remove: "削除", expire: "期限切れ", "return": "返品", maintenance: "メンテナンス"
   };
 
-  var WARDRX_KINDS = [
-    { key: "teiki", label: "定期" },
-    { key: "rinji", label: "臨時" },
-    { key: "taiin", label: "退院" },
-    { key: "meds", label: "持参薬" },
-    { key: "total", label: "合計" }
-  ];
+  var WARDRX_KINDS = root.DailyLog.WARDRX_INPUT_KINDS;
 
   var PACKER_UNITS = [
     { key: "tab", label: "錠剤分包機" },
@@ -135,23 +129,27 @@
       '<th>病棟</th><th class="num">枚数</th><th class="num">件数</th>', rows));
   }
 
+  function wardRxKindBlock(byName, kind) {
+    var rows = WARDS.map(function (ward) {
+      var w = byName[ward] || {};
+      var pair = w[kind.key] || { cnt: 0, dose: 0 };
+      return "<tr><td>" + esc(ward) + "</td><td>" +
+        '<input type="number" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
+        '" data-wardrx-kind="' + kind.key + '" data-wardrx-metric="cnt" value="' + num(pair.cnt) + '"></td><td>' +
+        '<input type="number" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
+        '" data-wardrx-kind="' + kind.key + '" data-wardrx-metric="dose" value="' + num(pair.dose) + '"></td></tr>';
+    }).join("");
+    return '<div style="margin-bottom:.75rem">' +
+      '<div style="font-size:12px;font-weight:600;margin-bottom:4px">' + esc(kind.label) + "</div>" +
+      table('<th>病棟</th><th class="num">枚数</th><th class="num">件数</th>', rows) + "</div>";
+  }
+
   function wardRxSection(log) {
     var byName = {};
     (log.wardRx || []).forEach(function (w) { byName[w.name] = w; });
-    var rows = WARDS.map(function (ward) {
-      var w = byName[ward] || {};
-      var cells = WARDRX_KINDS.map(function (kind) {
-        var pair = w[kind.key] || { cnt: 0 };
-        return "<td>" +
-          '<input type="number" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
-          '" data-wardrx-kind="' + kind.key + '" value="' + num(pair.cnt) + '"></td>';
-      }).join("");
-      return "<tr><td>" + esc(ward) + "</td>" + cells + "</tr>";
-    }).join("");
-    return card("病棟処方箋", table(
-      "<th>病棟</th>" + WARDRX_KINDS.map(function (k) {
-        return '<th class="num">' + k.label + "</th>";
-      }).join(""), rows), "card-green", "sec-title-green");
+    var body = WARDRX_KINDS.map(function (kind) { return wardRxKindBlock(byName, kind); }).join("") +
+      '<div class="hint">合計は保存時に自動計算されます。</div>';
+    return card("病棟処方箋", body, "card-green", "sec-title-green");
   }
 
   function packerSection(log) {
@@ -280,9 +278,6 @@
   // wardRx は cnt のみ編集可能。dose・ippoka は詳細画面にも表示されないため、
   // 編集開始時点の値(original、normalize済み)からそのまま引き継ぐ。
   function collect(container, original) {
-    var byWardRx = {};
-    (original.wardRx || []).forEach(function (w) { byWardRx[w.name] = w; });
-
     return {
       date: original.date,
       author: original.author,
@@ -302,15 +297,18 @@
         };
       }),
       wardRx: WARDS.map(function (ward) {
-        var orig = byWardRx[ward] || {};
         var row = { name: ward };
+        var t = { cnt: 0, dose: 0 };
         WARDRX_KINDS.forEach(function (kind) {
-          var input = container.querySelector(
-            '[data-wardrx-ward="' + ward + '"][data-wardrx-kind="' + kind.key + '"]');
-          var origPair = orig[kind.key] || { cnt: 0, dose: 0 };
-          row[kind.key] = { cnt: num(input.value), dose: origPair.dose || 0 };
+          var cnt = num(container.querySelector(
+            '[data-wardrx-ward="' + ward + '"][data-wardrx-kind="' + kind.key + '"][data-wardrx-metric="cnt"]').value);
+          var dose = num(container.querySelector(
+            '[data-wardrx-ward="' + ward + '"][data-wardrx-kind="' + kind.key + '"][data-wardrx-metric="dose"]').value);
+          row[kind.key] = { cnt: cnt, dose: dose };
+          t.cnt += cnt;
+          t.dose += dose;
         });
-        row.ippoka = orig.ippoka || { cnt: 0, dose: 0 };
+        row.total = t;
         return row;
       }),
       packerData: {
