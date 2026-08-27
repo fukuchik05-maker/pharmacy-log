@@ -157,10 +157,17 @@ match /{document=**} { allow read, write: if isOwner(); }           // ingestRun
 | `doctorChanges`(処方変更) | `doctorChanges` |
 | `premixes`(予製) | `premixes` |
 | `packer`(分包機) | `packerData` |
-| `submissions`(提出資料) | `submissions` |
 | `checklist`(チェックリスト) | `checklist` |
 | `meisai`(明細) | `inquiries`, `mrVisits`, `contacts`, `drugs`, `shortages`, `meetings`, `trainings` |
 | `notes`(その他) | `notes` |
+
+`submissions`(提出資料)は本アプリの編集画面が未対応のため、今回のスコープに含めない
+(別途データモデルを定めてから)。
+
+`checklist` の日誌側の形をここで定める: **`string[]`**(その日実施したチェック項目名の配列)。
+入力ページでは選択中の記入者の項目 `masters.checklist[author]` をチェックボックスで並べ、
+チェックが入った項目名だけを `payload.checklist` に入れる。項目が無い/1つも選ばれなければ `[]`。
+`DailyLog.normalize` は `checklist` を配列としてそのまま通すため、モデル変更は不要。
 
 `wardRx` の `total`: 枚 = `teiki.cnt + rinji.cnt + taiin.cnt + meds.cnt + ippoka.cnt`、
 件 = 同じく `.dose` の和。入力ページで計算して `payload.wardRx` に含める。
@@ -187,11 +194,16 @@ match /{document=**} { allow read, write: if isOwner(); }           // ingestRun
   そのセクションの入力欄は無効化(グレーアウト)され、`collect()` の対象外になる。
   - 既定 **ON**: `gairai`(外来処方箋・注射・薬剤管理指導)/ `winj`(病棟別注射 5病棟)/
     `doctorChanges`(処方変更 医師別)/ `premixes`(予製)/ `packer`(分包機)/
-    `submissions`(提出資料)/ `checklist`(チェックリスト)/
+    `checklist`(チェックリスト)/
     `meisai`(明細: 疑義照会・来客・問い合わせ・薬品管理・欠品・会議・研修、行の追加削除可)/
     `notes`(その他)
   - 既定 **OFF**: `wardRx`(病棟別処方箋 5病棟 × 定期/臨時/退院/持参薬/1包化 × 枚/件)。
     病院CSV取込が主経路のため既定では送らない。`total` は表示のみ・自動計算。
+- `checklist` セクションは選択中の記入者に依存する。記入者プルダウンを変えたら、
+  `masters.checklist[記入者]` の項目でセクションを再描画する。記入者にひも付く項目が無ければ
+  「この記入者のチェック項目はありません」と表示する。
+- `doctorChanges` は `masters.doctors` の各医師 × 件数、`premixes` は `masters.premixes` の各品目 × 包数。
+  既存ログを土台にしないため、初期値はすべて 0。
 
 ### 5.3 送信
 
