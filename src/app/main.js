@@ -338,12 +338,14 @@ el("deptReportPrintBtn").addEventListener("click", function () {
 });
 
 el("toolsDetails").addEventListener("toggle", function (event) {
-  if (event.target.open && !statusLoaded) {
+  if (!event.target.open) return;
+  if (!statusLoaded) {
     statusLoaded = true;
     refreshStatus();
     loadMasters();
     window.ChangelogView.render(el("changelogView"));
   }
+  loadDrafts();
 });
 
 el("signInBtn").addEventListener("click", function () {
@@ -519,5 +521,75 @@ el("hospCsvRunBtn").addEventListener("click", async function () {
     el("hospCsvRunBtn").disabled = false;
   }
 });
+
+async function loadDrafts() {
+  el("draftsView").innerHTML = '<div class="empty">読み込み中…</div>';
+  try {
+    var drafts = await Storage.listDrafts();
+    window.DraftsView.render(el("draftsView"), drafts, {
+      onApprove: approveDraft,
+      onReject: rejectDraft
+    });
+  } catch (err) {
+    el("draftsView").innerHTML = '<div class="sec-title">モバイル下書きの承認</div>' +
+      '<span class="err">読み取りに失敗しました: ' + esc(describeError(err)) + "</span>";
+  }
+}
+
+async function approveDraft(id) {
+  var msgEl = el("draftsView").querySelector('[data-draft="' + id + '"] [data-draft-msg]');
+  var drafts;
+  try {
+    drafts = await Storage.listDrafts();
+  } catch (err) {
+    if (msgEl) msgEl.innerHTML = '<span class="err">' + esc(describeError(err)) + "</span>";
+    return;
+  }
+  var draft = drafts.filter(function (d) { return d.id === id; })[0];
+  if (!draft) { loadDrafts(); return; }
+
+  var fields = Object.assign({ author: draft.author }, draft.payload);
+  var merged = window.DraftMerge.mergeDraftIntoLog(null, {
+    date: draft.date, author: draft.author, payload: draft.payload
+  });
+  var errors = window.DailyLog.validate(merged);
+  if (errors.length) {
+    if (msgEl) {
+      msgEl.innerHTML = '<span class="err">検証エラー:<br>' +
+        errors.map(function (e) { return esc(e.field) + "：" + esc(e.message); }).join("<br>") + "</span>";
+    }
+    return;
+  }
+
+  try {
+    await Storage.saveDailyEntry(draft.date, fields);
+  } catch (err) {
+    if (msgEl) msgEl.innerHTML = '<span class="err">反映に失敗しました: ' + esc(describeError(err)) + "</span>";
+    return;
+  }
+  try {
+    await Storage.deleteDraft(id);
+  } catch (err) {
+    if (msgEl) {
+      msgEl.innerHTML = '<span class="err">反映しましたが下書きの削除に失敗しました。もう一度却下してください。</span>';
+    }
+    await refreshStatus();
+    await hospGotoImportedDay(draft.date);
+    return;
+  }
+  await refreshStatus();
+  await hospGotoImportedDay(draft.date);
+}
+
+async function rejectDraft(id) {
+  try {
+    await Storage.deleteDraft(id);
+  } catch (err) {
+    var msgEl = el("draftsView").querySelector('[data-draft="' + id + '"] [data-draft-msg]');
+    if (msgEl) msgEl.innerHTML = '<span class="err">削除に失敗しました: ' + esc(describeError(err)) + "</span>";
+    return;
+  }
+  loadDrafts();
+}
 
 Auth.onChange(render);
