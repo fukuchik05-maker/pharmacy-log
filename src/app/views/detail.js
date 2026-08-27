@@ -130,15 +130,20 @@
 
   function wardRxSection(log) {
     if (!log.wardRx || !log.wardRx.length) return "";
+    var kinds = root.DailyLog.WARDRX_INPUT_KINDS;
+    var head = "<th>病棟</th>" + kinds.map(function (k) {
+      return '<th class="num">' + k.label + "</th>";
+    }).join("") + '<th class="num">合計</th>';
     var rows = log.wardRx.map(function (w) {
-      return "<tr><td>" + esc(w.name) + '</td><td class="num">' + w.teiki.cnt +
-        '</td><td class="num">' + w.rinji.cnt + '</td><td class="num">' + w.taiin.cnt +
-        '</td><td class="num">' + w.meds.cnt + '</td><td class="num">' + w.total.cnt + "</td></tr>";
+      var cells = kinds.map(function (k) {
+        var p = w[k.key] || { cnt: 0, dose: 0 };
+        return '<td class="num">' + (p.cnt || 0) + " / " + (p.dose || 0) + "</td>";
+      }).join("");
+      var t = w.total || { cnt: 0, dose: 0 };
+      return "<tr><td>" + esc(w.name) + "</td>" + cells +
+        '<td class="num">' + (t.cnt || 0) + " / " + (t.dose || 0) + "</td></tr>";
     }).join("");
-    return card("病棟処方箋", table(
-      '<th>病棟</th><th class="num">定期</th><th class="num">臨時</th>' +
-      '<th class="num">退院</th><th class="num">持参薬</th><th class="num">合計</th>', rows),
-      "card-green", "sec-title-green");
+    return card("病棟処方箋", table(head, rows), "card-green", "sec-title-green");
   }
 
   function premixSection(log) {
