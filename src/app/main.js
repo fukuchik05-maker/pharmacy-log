@@ -570,15 +570,19 @@ async function approveDraft(id) {
   try {
     await Storage.deleteDraft(id);
   } catch (err) {
+    // 反映は済んでいる。下書きだけ消せなかった。カードは残して却下を促す。
     if (msgEl) {
-      msgEl.innerHTML = '<span class="err">反映しましたが下書きの削除に失敗しました。もう一度却下してください。</span>';
+      msgEl.innerHTML = '<span class="ok">' + esc(draft.date) +
+        ' に反映しました。</span> <span class="err">（下書きの削除に失敗。もう一度「却下」で消してください）</span>';
     }
-    await refreshStatus();
-    await hospGotoImportedDay(draft.date);
+    refreshStatus();
     return;
   }
-  await refreshStatus();
-  await hospGotoImportedDay(draft.date);
+  // 反映・削除とも成功。一覧を描き直してカードを消す(rejectDraft と同じ)。
+  // 対象日への遷移と件数の再取得は best-effort（読み取りが詰まっても一覧更新を妨げない）。
+  loadDrafts();
+  refreshStatus();
+  hospGotoImportedDay(draft.date);
 }
 
 async function rejectDraft(id) {
