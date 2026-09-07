@@ -22,7 +22,11 @@ function signOut() {
 
 function onChange(handler) {
   onAuthStateChanged(auth, function (user) {
-    if (!user) {
+    // 匿名ユーザーは entry.html (モバイル入力) が作る。本アプリとは同一
+    // オリジンでセッションを共有するため、同じ端末で入力ページを開くと
+    // ここに匿名ユーザーが渡ってくる。denied ではなく未ログイン扱いにし、
+    // Google ログインボタンを見せて入り直せるようにする。
+    if (!user || user.isAnonymous) {
       handler({ status: "signedOut" });
       return;
     }
