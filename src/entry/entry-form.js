@@ -4,6 +4,8 @@
   var DL = root.DailyLog;
   var ES = root.EntrySections;
   var WARDS = DL.WARDS;
+  // 入力画面の表示順(保存データの順序は DL.WARDS のまま)
+  var DISPLAY_WARDS = ["かりゆし", "ゆいゆい", "はいさい", "うりずん北", "うりずん南"];
 
   var DRUG_LABELS = {
     adopt: "採用", remove: "削除", expire: "期限切れ", "return": "返品", maintenance: "メンテナンス"
@@ -68,7 +70,7 @@
     ) + '<div class="edit-row"><label>薬剤管理指導（件）</label>' + numInput("counsel") + "</div>";
   }
   function winjBody() {
-    var rows = WARDS.map(function (ward) {
+    var rows = DISPLAY_WARDS.map(function (ward) {
       return "<tr><td>" + esc(ward) + "</td><td>" +
         '<input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-winj-ward="' + esc(ward) +
         '" data-winj-kind="cnt" placeholder="0"></td><td>' +
@@ -78,7 +80,7 @@
     return table('<th>病棟</th><th class="num">枚数</th><th class="num">件数</th>', rows);
   }
   function wardRxKindBlock(kind) {
-    var rows = WARDS.map(function (ward) {
+    var rows = DISPLAY_WARDS.map(function (ward) {
       return "<tr><td>" + esc(ward) + "</td><td>" +
         '<input type="number" inputmode="numeric" min="0" step="1" class="num-input" data-wardrx-ward="' + esc(ward) +
         '" data-wardrx-kind="' + kind.key + '" data-wardrx-metric="cnt" placeholder="0"></td><td>' +
@@ -91,7 +93,7 @@
   }
 
   function wardRxTotalBlock() {
-    var rows = WARDS.map(function (ward) {
+    var rows = DISPLAY_WARDS.map(function (ward) {
       return "<tr><td>" + esc(ward) + '</td><td class="num">' +
         '<span data-wardrx-total-cnt="' + esc(ward) + '">0</span> / ' +
         '<span data-wardrx-total-dose="' + esc(ward) + '">0</span></td></tr>';
