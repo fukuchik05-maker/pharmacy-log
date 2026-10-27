@@ -170,12 +170,24 @@
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">' + blocks + "</div>");
   }
 
-  function premixSection(log) {
-    var list = log.premixes || [];
+  // 記録済みの予製に、マスタにあって記録に無い薬剤を個数0で足す。
+  // マスタ追加前に保存した記録でも、新しい薬剤を編集画面から入力できる。
+  function premixItems(log, masters) {
+    var items = (log.premixes || []).map(function (p) { return { drug: p.drug, cnt: p.cnt }; });
+    var have = {};
+    items.forEach(function (p) { have[p.drug] = true; });
+    (masters.premixes || []).forEach(function (drug) {
+      if (!have[drug]) items.push({ drug: drug, cnt: 0 });
+    });
+    return items;
+  }
+
+  function premixSection(log, masters) {
+    var list = premixItems(log, masters);
     if (!list.length) return "";
-    var rows = list.map(function (p, index) {
+    var rows = list.map(function (p) {
       return "<tr><td>" + esc(p.drug) + "</td><td>" +
-        '<input type="number" min="0" step="1" class="num-input" data-premix-index="' + index +
+        '<input type="number" min="0" step="1" class="num-input" data-premix="' + esc(p.drug) +
         '" value="' + num(p.cnt) + '"></td></tr>';
     }).join("");
     return card("予製", table('<th>薬剤</th><th class="num">個数</th>', rows));
@@ -329,9 +341,8 @@
             '[data-packer-unit="san"][data-packer-item="清掃"]').checked
         }
       },
-      premixes: (original.premixes || []).map(function (p, index) {
-        var input = container.querySelector('[data-premix-index="' + index + '"]');
-        return { drug: p.drug, cnt: num(input.value) };
+      premixes: [].slice.call(container.querySelectorAll("[data-premix]")).map(function (input) {
+        return { drug: input.getAttribute("data-premix"), cnt: num(input.value) };
       }),
       doctorChanges: (original.doctorChanges || []).map(function (x, index) {
         var input = container.querySelector('[data-doctorchange-index="' + index + '"]');
@@ -349,8 +360,9 @@
 
   // === 画面の組み立て ===
 
-  function render(container, log, onSave, onCancel) {
+  function render(container, log, onSave, onCancel, masters) {
     var normalized = root.DailyLog.normalize(log);
+    masters = masters || {};
 
     container.innerHTML =
       '<div class="detail-head">' +
@@ -363,7 +375,7 @@
       rxSection(normalized) +
       winjSection(normalized) +
       wardRxSection(normalized) +
-      premixSection(normalized) +
+      premixSection(normalized, masters) +
       doctorChangesSection(normalized) +
       packerSection(normalized) +
       listSectionHtml("inquiries", normalized.inquiries) +

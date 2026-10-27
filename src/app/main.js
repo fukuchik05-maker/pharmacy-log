@@ -138,12 +138,20 @@ function showDetail(date) {
   window.scrollTo(0, 0);
 }
 
-function showEdit(date) {
+async function showEdit(date) {
   var log = currentLogs.filter(function (x) { return x.date === date; })[0];
   if (!log) return;
+  // マスタを読めなくても記録済みの項目は編集できるよう、失敗時は空のマスタで続行する。
+  var masters = {};
+  try {
+    masters = await Storage.getMasters();
+  } catch (err) {
+    masters = {};
+  }
   window.EditView.render(el("detailView"), log,
     function (data) { saveEdit(date, data); },
-    function () { showDetail(date); });
+    function () { showDetail(date); },
+    masters);
   window.scrollTo(0, 0);
 }
 
