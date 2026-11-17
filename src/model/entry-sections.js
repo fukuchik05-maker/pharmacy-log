@@ -60,13 +60,28 @@
     }).map(function (sec) { return SECTION_TITLES[sec]; });
   }
 
+  // ISO文字列(UTC保存)を端末のローカル時刻の HH:MM にする。offsetMinutes はテスト用(日本=540)。
+  // slice(11,16) だとUTCのまま出てしまい、日本では9時間遅れて見える。
+  function formatLocalTime(iso, offsetMinutes) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    var p = function (n) { return n < 10 ? "0" + n : "" + n; };
+    if (typeof offsetMinutes === "number") {
+      var s = new Date(d.getTime() + offsetMinutes * 60000);
+      return p(s.getUTCHours()) + ":" + p(s.getUTCMinutes());
+    }
+    return p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+
   var api = {
     SECTION_FIELDS: SECTION_FIELDS,
     SECTION_TITLES: SECTION_TITLES,
     DEFAULT_ON: DEFAULT_ON,
     payloadFromSections: payloadFromSections,
     wardRxTotals: wardRxTotals,
-    sectionLabelsOf: sectionLabelsOf
+    sectionLabelsOf: sectionLabelsOf,
+    formatLocalTime: formatLocalTime
   };
 
   if (typeof module !== "undefined" && module.exports) {

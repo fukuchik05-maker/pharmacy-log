@@ -100,7 +100,7 @@ async function refreshMine(uid) {
     }
     el("mine").innerHTML = rows.map(function (r) {
       var labels = window.EntrySections.sectionLabelsOf(r.payload || {});
-      var t = (r.createdAt || "").slice(11, 16);
+      var t = window.EntrySections.formatLocalTime(r.createdAt);
       return '<div style="padding:4px 0;border-bottom:1px solid #EDF0F5">' +
         esc(r.date) + " ・ 記入者:" + esc(r.author) + " ・ 送信 " + esc(t) +
         " ・ " + labels.map(function (x) { return "[" + esc(x) + "]"; }).join("") + "</div>";

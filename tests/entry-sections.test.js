@@ -57,4 +57,20 @@ test("sectionLabelsOf lists sections present in the payload, in declared order",
   assert.deepStrictEqual(labels, ["外来", "明細", "その他"]);
 });
 
+test("formatLocalTime shows JST (UTC+9), not the UTC part of the ISO string", function () {
+  assert.strictEqual(S.formatLocalTime("2026-11-18T08:53:00.000Z", 540), "17:53");
+  assert.strictEqual(S.formatLocalTime("2026-11-17T22:50:00.000Z", 540), "07:50");
+});
+
+test("formatLocalTime returns empty string for missing or invalid input", function () {
+  assert.strictEqual(S.formatLocalTime(undefined), "");
+  assert.strictEqual(S.formatLocalTime(""), "");
+  assert.strictEqual(S.formatLocalTime("not-a-date"), "");
+});
+
+test("formatLocalTime without offset uses the device local time", function () {
+  var d = new Date(2026, 10, 18, 17, 53);
+  assert.strictEqual(S.formatLocalTime(d.toISOString()), "17:53");
+});
+
 h.summary();

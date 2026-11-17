@@ -25,7 +25,7 @@
 
   function rowHtml(d) {
     var labels = root.EntrySections.sectionLabelsOf(d.payload || {});
-    var t = (d.createdAt || "").slice(11, 16);
+    var t = root.EntrySections.formatLocalTime(d.createdAt);
     return '<div class="card" data-draft="' + esc(d.id) + '">' +
       '<div class="hint">' + esc(d.date) + " ・ 記入者:" + esc(d.author) + " ・ 送信 " + esc(t) +
       " ・ " + labels.map(function (x) { return "[" + esc(x) + "]"; }).join("") + "</div>" +
